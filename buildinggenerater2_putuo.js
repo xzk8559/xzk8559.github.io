@@ -62,6 +62,9 @@ export function BLOCKBuilding(cityMap, ib, floor_height, floor) {
     geometry.computeVertexNormals ();
 
     let material = new THREE.MeshLambertMaterial( {vertexColors: THREE.VertexColors} );
+    material.precision = "lowp";
+    material.transparent = true;
+    material.opacity = 0.8;
 
     building = new THREE.Mesh( geometry, material );
 

@@ -4,7 +4,6 @@
 <head>
     <title> NewYork_Demo </title>
     <meta charset="utf-8">
-    <link href="favicon.ico">
     <link type="text/css" rel="stylesheet" href="./main.css">
 </head>
 <body>
@@ -19,8 +18,9 @@
     import { OrbitControls } from './three.js_115/examples/jsm/controls/OrbitControls.js';
     import * as THREE from "./three.js_115/build/three.module.js";
     import { BLOCKBuilding } from "./buildinggenerater2_putuo.js";
-    import { BLOCKBuilding_wireframe } from "./buildingwireframe.js";
-
+    import { BLOCKBuilding_wireframe } from "./buildingedges.js";
+    import { roads_test } from "./road.js";
+    import { OBJBuilding } from "./buildingloader3.js";
     import { quadTree } from "./Quadtree_putuo.js";
     import { getRenderList } from "./getRenderList.js";
 
@@ -158,6 +158,9 @@
 
             scene.add(  new THREE.AxesHelper(10) );
 
+            /*let road = roads_test();
+            scene.add(road);*/
+
             /**
              * @param map.buildings {Object}
              * @param map.buildings.bounds {Array}
@@ -174,7 +177,8 @@
                 floor[ib] = 1;
 
                 building[ib] = BLOCKBuilding( map, ib, floor_height, floor[ib] );
-                wf[ib] = BLOCKBuilding_wireframe( map, ib, floor_height, floor[ib] );
+                //wf[ib] = BLOCKBuilding_wireframe( map, ib, floor_height, floor[ib] );
+                wf[ib] = BLOCKBuilding_wireframe( building[ib] );
 
                 //scene.add(building[ib]);
 
@@ -254,7 +258,7 @@
         }
         function initGui() {
 
-            gui = new GUI();
+            gui = new GUI( { width: 300 } );
 
             let folder = gui.addFolder( "General Options" );
 
