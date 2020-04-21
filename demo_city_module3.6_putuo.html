@@ -4,6 +4,7 @@
 <head>
     <title> PuTuo_Demo </title>
     <meta charset="utf-8">
+    <link type="text/css" rel="stylesheet" href="./main1.css">
 </head>
 <body>
 
@@ -27,7 +28,7 @@
     let stats, orbitControls, gui;
     let renderer, scene, camera, raycaster;
     let plane, light, building, obj, objNum, floor, dispNum, wf;
-    let mouse = new THREE.Vector2(), INTERSECTED, intersects;
+    let mouse = new THREE.Vector2(), INTERSECTED;
     let treeIteration = 7; // for n = 100,000, iteration > 6 recommended
 
     let state = {
@@ -63,6 +64,7 @@
         initGui();
 
         document.getElementById("WebGL-output").appendChild(renderer.domElement);
+        document.getElementById("WebGL-output").addEventListener("dblclick", setBuildingData);
         window.addEventListener( 'resize', onWindowResize, false );
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
@@ -152,6 +154,11 @@
                 building[ib] = BLOCKBuilding( map, ib, floor_height, floor[ib] );
                 wf[ib] = BLOCKBuilding_wireframe( building[ib] );
 
+                building[ib].userData = {
+                    height: map.buildings.height[ib],
+                    floor: Math.floor(map.buildings.height[ib] / 3.0)
+                };
+
                 scene.add(building[ib]);
                 scene.add(wf[ib]);
 
@@ -184,7 +191,7 @@
             // 使动画循环使用时阻尼或自转 意思是否有惯性
             orbitControls.enableDamping = true;
             //动态阻尼系数 就是鼠标拖拽旋转灵敏度
-            orbitControls.dampingFactor = 0.25;
+            orbitControls.dampingFactor = 0.5;
             //是否可以缩放
             orbitControls.enableZoom = true;
             //是否自动旋转
@@ -304,6 +311,7 @@
 
                     if ( (INTERSECTED !== intersects[ 0 ].object) ) {
 
+                        // 还原hex
                         if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
                         INTERSECTED = intersects[ 0 ].object;
@@ -322,6 +330,7 @@
                 }
 
             }
+
             renderer.render( scene, camera );
         }
 
@@ -334,6 +343,16 @@
         let frustum = new THREE.Frustum();
         frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
         return frustum;
+    }
+    function setBuildingData(){
+        if ( INTERSECTED ){
+            let geo = INTERSECTED.geometry;
+            parent.table_attr.height.value = INTERSECTED.userData.height;
+            parent.table_attr.floor.value = INTERSECTED.userData.floor;
+            parent.table_attr.coordinate.value = "("+geo.boundingSphere.center.x.toFixed(1).toString()+", "+geo.boundingSphere.center.z.toFixed(1).toString()+")";
+            parent.table_attr.boundSp.value = geo.boundingSphere.radius.toFixed(2);
+            parent.table_attr.triangles.value = geo.attributes.position.count;
+        }
     }
 
 

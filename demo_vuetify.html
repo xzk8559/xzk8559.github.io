@@ -46,14 +46,14 @@
             <v-toolbar-title>Application</v-toolbar-title>
             <v-container padding: 0>
                 <v-tabs  class="grey darken-4">
-                    <v-tab>Item One</v-tab>
-                    <v-tab>Item Two</v-tab>
-                    <v-tab>Item Three</v-tab>
+                    <v-tab @click="renderPage_1">Welcome</v-tab>
+                    <v-tab @click="renderPage_2">Attribute</v-tab>
+                    <v-tab @click="renderPage_3">Gen</v-tab>
                 </v-tabs>
             </v-container>
         </v-app-bar>
 
-        <v-content style="height: 100%; float: left; position: relative">
+        <v-content class="d-flex flex-row">
             <!--<v-container
                     fluid
                     fill-height
@@ -94,18 +94,74 @@
                     </v-flex>
                 </v-layout>
             </v-container>-->
+            <v-card class="grey darken-3" outlined tile style="height: 100%; width: 20%; float: left; position: relative">
+                <v-card v-if="pageAside === 1" ountlined tile >
+                    <v-card class="grey darken-2 mx-auto">
+                        <v-card-text>
+                            <div>Welcome,</div>
+                            <p class="display-1 text--primary">
+                                Friends!
+                            </p>
+                            <div class="text--primary">
+                                Here's my playground.<br>
+                                "an online city"
+                            </div>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-btn
+                                    text
+                                    color="blue accent-4"
+                                    onclick="window.location.href = './index.html'"
+                            >
+                                No, thanks.
+                            </v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-card>
+                <v-card v-if="pageAside === 2" ountlined tile >
+                    <v-card-title class="grey darken-3">
+                        Building Attributes
+                        <v-spacer></v-spacer>
+                        <v-text-field
+                                v-model="search"
+                                append-icon="mdi-magnify"
+                                label="Search"
+                                single-line
+                                hide-details
+                        ></v-text-field>
+                    </v-card-title>
+                    <v-data-table
+                            :headers="headers"
+                            :items="buildingAttrs"
+                            :search="search"
+                            class="grey darken-2"
+                            ountlined tile
+
+                    ></v-data-table>
+                </v-card>
+                <v-card v-if="pageAside === 3" ountlined tile >
+                    <v-card class="grey darken-2 mx-auto">
+                        <v-card-text>
+                            <p class="display-1 text--primary">
+                                I love you, Wang Yangyang!!!
+                            </p>
+                        </v-card-text>
+
+                    </v-card>
+                </v-card>
+            </v-card>
+
             <iframe
                     id="scene"
                     frameBorder="0"
                     src="./demo_city_module3.6_putuo.html"
                     scrolling="no"
-                    width="100%"
-                    height="100%"
+                    style="height: 100%; width: calc(100% - 20%); float: left; position: relative"
             >
             </iframe>
         </v-content>
 
-        <v-footer app>
+        <v-footer app elevation="6">
             <span>&copy; 2020</span>
         </v-footer>
     </v-app>
@@ -114,14 +170,44 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 <script>
-    new Vue({
+    var table_attr = {
+        height: {name: 'height', value: null},
+        floor: {name: 'floor', value: null},
+        coordinate: {name: 'co-ordinate(x, y)', value: null},
+        boundSp: {name: 'bounding sphere radius', value: null},
+        triangles: {name: 'triangles', value: null}
+    };
+    var vm = new Vue({
         el: '#app',
-        vuetify: new Vuetify({
-            theme: { dark: true },
-        }),
-        data: () => ({
+        vuetify: new Vuetify({theme: { dark: true },}),
+        data: ({ // () =>
+            pageAside: 1,
             drawer: null,
-        })
-    })
+            aside_width: "30%",
+            search: '',
+            headers: [
+                {text: 'Attributes', align: 'start', sortable: false, value: 'name',},
+                { text: 'Values', value: 'value', sortable: false }
+            ],
+            buildingAttrs: [
+                table_attr.height,
+                table_attr.floor,
+                table_attr.coordinate,
+                table_attr.boundSp,
+                table_attr.triangles
+            ]
+        }),
+        methods: {
+            renderPage_1: function () {
+                this.pageAside = 1;
+            },
+            renderPage_2: function () {
+                this.pageAside = 2;
+            },
+            renderPage_3: function () {
+                this.pageAside = 3;
+            }
+        }
+    });
 </script>
 </html>
