@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
 <head>
     <meta charset="UTF-8">
     <title>PuTuo_Demo</title>
@@ -47,8 +47,8 @@
             <v-container padding: 0>
                 <v-tabs  class="grey darken-4">
                     <v-tab @click="renderPage_1">Welcome</v-tab>
-                    <v-tab @click="renderPage_2">Attribute</v-tab>
-                    <v-tab @click="renderPage_3">Gen</v-tab>
+                    <v-tab @click="renderPage_2">Attributes</v-tab>
+                    <v-tab @click="renderPage_3">Controls</v-tab>
                 </v-tabs>
             </v-container>
         </v-app-bar>
@@ -94,7 +94,7 @@
                     </v-flex>
                 </v-layout>
             </v-container>-->
-            <v-card class="grey darken-3" outlined tile style="height: 100%; width: 20%; float: left; position: relative">
+            <v-card class="grey darken-3" outlined tile style="height: 100%; width: 30%; float: left; position: relative">
                 <v-card v-if="pageAside === 1" ountlined tile >
                     <v-card class="grey darken-2 mx-auto">
                         <v-card-text>
@@ -136,16 +136,177 @@
                             :search="search"
                             class="grey darken-2"
                             ountlined tile
+                            hide-default-header
 
                     ></v-data-table>
                 </v-card>
                 <v-card v-if="pageAside === 3" ountlined tile >
-                    <v-card class="grey darken-2 mx-auto">
-                        <v-card-text>
-                            <p class="display-1 text--primary">
-                                I love you, Wang Yangyang!!!
-                            </p>
-                        </v-card-text>
+                    <v-card class="grey darken-3 mx-auto">
+
+                        <v-row dense>
+                            <v-col cols="12">
+                                <v-expansion-panels focusable>
+                                    <v-expansion-panel class="grey darken-2">
+
+                                        <v-expansion-panel-header>Camera Controls</v-expansion-panel-header>
+                                        <v-expansion-panel-content>
+                                            <v-divider></v-divider>
+                                            <v-card-subtitle>Current position:</v-card-subtitle>
+                                            <v-row justify="space-around" dense>
+                                                <v-col cols="6" class="d-flex align-center">
+                                                    <span
+                                                            class="display-1 font-weight-light mx-auto"
+
+                                                    >{{ camera_x }}</span>
+                                                </v-col>
+                                                <v-col cols="6" class="d-flex align-center">
+                                                    <span
+                                                            class="display-1 font-weight-light mx-auto"
+                                                            v-text="camera_y"
+                                                    ></span>
+                                                </v-col>
+                                            </v-row>
+                                            <v-card-subtitle>Change your camera position.</v-card-subtitle>
+                                            <v-row justify="space-around" dense>
+                                                <v-col cols="1"></v-col>
+                                                <v-col cols="8" class="d-flex align-center">
+                                                    <v-slider v-model="slider_x" min="0" max="1000" label="x :" hide-details></v-slider>
+                                                </v-col>
+                                                <v-col cols="2">
+                                                    <v-text-field
+                                                            v-model="slider_x"
+                                                            class="mt-0 pt-0"
+                                                            hide-details single-line
+                                                            dense outlined
+                                                            label="number"
+                                                    ></v-text-field>
+                                                </v-col>
+                                                <v-col cols="1"></v-col>
+                                                <v-col cols="1"></v-col>
+                                                <v-col cols="8" class="d-flex align-center">
+                                                    <v-slider v-model="slider_y" min="0" max="1000" label="y :" hide-details></v-slider>
+                                                </v-col>
+                                                <v-col cols="2">
+                                                    <v-text-field
+                                                            v-model="slider_y"
+                                                            class="mt-0 pt-0"
+                                                            hide-details single-line
+                                                            dense outlined
+                                                            label="number"
+                                                    ></v-text-field>
+                                                </v-col>
+                                                <v-col cols="1"></v-col>
+                                                <v-col cols="12">
+                                                    <v-card-actions>
+                                                        <v-btn @click="resetCamera" dark block color="primary">Reset camera</v-btn>
+                                                    </v-card-actions>
+                                                </v-col>
+                                            </v-row>
+                                        </v-expansion-panel-content>
+
+                                    </v-expansion-panel>
+                                    <!--<v-row no-gutters>
+                                        <v-col cols="9">
+                                            <v-card-text class="subtitle-1 font-weight-medium">Camera Controls</v-card-text>
+                                        </v-col>
+                                        <v-col cols="3" align="center" justify="center">
+                                            <v-container fluid>
+                                                <v-btn icon @click="show = !show">
+                                                    <v-icon class="mx-auto">{{ show ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                                </v-btn>
+                                            </v-container>
+                                        </v-col>
+                                    </v-row>
+                                    <v-expand-transition>
+                                        <div v-show="show">
+                                            <v-divider></v-divider>
+                                            <v-card-subtitle>Current position:</v-card-subtitle>
+                                            <v-row justify="space-around" dense>
+                                                <v-col cols="6" class="d-flex align-center">
+                                                    <span
+                                                            class="display-1 font-weight-light mx-auto"
+
+                                                    >{{ camera_x }}</span>
+                                                </v-col>
+                                                <v-col cols="6" class="d-flex align-center">
+                                                    <span
+                                                            class="display-1 font-weight-light mx-auto"
+                                                            v-text="camera_y"
+                                                    ></span>
+                                                </v-col>
+                                            </v-row>
+                                            <v-card-subtitle>Change your camera position.</v-card-subtitle>
+                                            <v-row justify="space-around" dense>
+                                                <v-col cols="1"></v-col>
+                                                <v-col cols="8" class="d-flex align-center">
+                                                    <v-slider v-model="slider_x" min="0" max="1000" label="x :" hide-details></v-slider>
+                                                </v-col>
+                                                <v-col cols="2">
+                                                    <v-text-field
+                                                            v-model="slider_x"
+                                                            class="mt-0 pt-0"
+                                                            hide-details single-line
+                                                            dense outlined
+                                                            label="number"
+                                                    ></v-text-field>
+                                                </v-col>
+                                                <v-col cols="1"></v-col>
+                                                <v-col cols="1"></v-col>
+                                                <v-col cols="8" class="d-flex align-center">
+                                                    <v-slider v-model="slider_y" min="0" max="1000" label="y :" hide-details></v-slider>
+                                                </v-col>
+                                                <v-col cols="2">
+                                                    <v-text-field
+                                                            v-model="slider_y"
+                                                            class="mt-0 pt-0"
+                                                            hide-details single-line
+                                                            dense outlined
+                                                            label="number"
+                                                    ></v-text-field>
+                                                </v-col>
+                                                <v-col cols="1"></v-col>
+                                                <v-col cols="12">
+                                                    <v-card-actions>
+                                                        <v-btn @click="resetCamera" dark block color="primary">Reset camera</v-btn>
+                                                    </v-card-actions>
+                                                </v-col>
+                                            </v-row>
+
+                                        </div>
+                                    </v-expand-transition>-->
+                                </v-expansion-panels>
+                            </v-col>
+
+                            <v-col
+                                    v-for="(item, i) in items"
+                                    :key="i"
+                                    cols="12"
+                            >
+                                <v-card
+                                        :color="item.color"
+                                        dark
+                                >
+                                    <div class="d-flex flex-no-wrap justify-space-between">
+                                        <div>
+                                            <v-card-title
+                                                    class="headline"
+                                                    v-text="item.title"
+                                            ></v-card-title>
+
+                                            <v-card-subtitle v-text="item.artist"></v-card-subtitle>
+                                        </div>
+
+                                        <v-avatar
+                                                class="ma-3"
+                                                size="125"
+                                                tile
+                                        >
+                                            <v-img :src="item.src"></v-img>
+                                        </v-avatar>
+                                    </div>
+                                </v-card>
+                            </v-col>
+                        </v-row>
 
                     </v-card>
                 </v-card>
@@ -156,7 +317,7 @@
                     frameBorder="0"
                     src="./demo_city_module3.6_putuo.html"
                     scrolling="no"
-                    style="height: 100%; width: calc(100% - 20%); float: left; position: relative"
+                    style="height: 100%; width: calc(100% - 30%); float: left; position: relative"
             >
             </iframe>
         </v-content>
@@ -169,7 +330,12 @@
 </body>
 <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-<script>
+<script type="text/javascript">
+    var cameraControls = {
+        x_set: 0,
+        y_set: 0,
+        isReset: 0
+    };
     var table_attr = {
         height: {name: 'height', value: null},
         floor: {name: 'floor', value: null},
@@ -180,10 +346,14 @@
     var vm = new Vue({
         el: '#app',
         vuetify: new Vuetify({theme: { dark: true },}),
-        data: ({ // () =>
+        data:() => ({ // () =>
             pageAside: 1,
-            drawer: null,
+            show: false,
             aside_width: "30%",
+            slider_x: cameraControls.x_set,
+            slider_y: cameraControls.y_set,
+            camera_x: 0,
+            camera_y: 0,
             search: '',
             headers: [
                 {text: 'Attributes', align: 'start', sortable: false, value: 'name',},
@@ -195,6 +365,20 @@
                 table_attr.coordinate,
                 table_attr.boundSp,
                 table_attr.triangles
+            ],
+            items: [
+                {
+                    color: '#1F7087',
+                    src: 'https://cdn.vuetifyjs.com/images/cards/foster.jpg',
+                    title: 'Supermodel',
+                    artist: 'Foster the People',
+                },
+                {
+                    color: '#952175',
+                    src: 'https://cdn.vuetifyjs.com/images/cards/halcyon.png',
+                    title: 'Halcyon Days',
+                    artist: 'Ellie Goulding',
+                },
             ]
         }),
         methods: {
@@ -206,6 +390,11 @@
             },
             renderPage_3: function () {
                 this.pageAside = 3;
+            },
+            resetCamera: function () {
+                //console.log(document.getElementById("scene").contentWindow.camera);
+                //document.getElementById("scene").contentWindow.reset_camera();
+                cameraControls.isReset = 1;
             }
         }
     });
