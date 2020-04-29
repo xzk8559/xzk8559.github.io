@@ -107,7 +107,7 @@
             scene.background = new THREE.Color( '#585858' );
         }
         function initCamera() {
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, state.Sight_Distance);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, state.Sight_Distance);
             camera.position.set( 20, 60, 20);
             camera.layers.enable( 0 ); // enabled by default
             camera.layers.enable( 1 );
@@ -155,6 +155,7 @@
                 wf[ib] = BLOCKBuilding_wireframe( building[ib] );
 
                 building[ib].userData = {
+                    bid: ib,
                     height: map.buildings.height[ib],
                     floor: Math.floor(map.buildings.height[ib] / 3.0)
                 };
@@ -189,7 +190,7 @@
             // 如果使用animate方法时，将此函数删除
             //orbitControls.addEventListener( 'change', render );
 
-            orbitControls.enableDamping = true;
+            orbitControls.enableDamping = false;
             orbitControls.dampingFactor = 0.5;
 
             orbitControls.enableZoom = true;
@@ -282,6 +283,7 @@
 
         function render() {
 
+            // update parent page
             parent.vm.camera_x = camera.position.x.toFixed(1);
             parent.vm.camera_y = camera.position.z.toFixed(1);
             if (parent.cameraControls.isReset === 1){
@@ -364,17 +366,19 @@
         frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
         return frustum;
     }
-    function setBuildingData(){
-        if ( INTERSECTED ){
+    async function setBuildingData() {
+        if (INTERSECTED) {
             let geo = INTERSECTED.geometry;
+            let file = "./request/bid_" + INTERSECTED.userData.bid.toString() + ".json";
+            parent.loadTableData(file);
+            parent.table_attr.bid.value = INTERSECTED.userData.bid;
             parent.table_attr.height.value = INTERSECTED.userData.height;
             parent.table_attr.floor.value = INTERSECTED.userData.floor;
-            parent.table_attr.coordinate.value = "("+geo.boundingSphere.center.x.toFixed(1).toString()+", "+geo.boundingSphere.center.z.toFixed(1).toString()+")";
+            parent.table_attr.coordinate.value = "(" + geo.boundingSphere.center.x.toFixed(1).toString() + ", " + geo.boundingSphere.center.z.toFixed(1).toString() + ")";
             parent.table_attr.boundSp.value = geo.boundingSphere.radius.toFixed(2);
             parent.table_attr.triangles.value = geo.attributes.position.count;
         }
     }
-
 
 </script>
 </body>

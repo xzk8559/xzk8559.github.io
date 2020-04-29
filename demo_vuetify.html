@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>PuTuo_Demo</title>
@@ -12,316 +12,199 @@
 <body>
 <div id="app">
     <v-app id="inspire">
-        <!--<v-navigation-drawer
-                v-model="drawer"
-                app
-                clipped
-        >
-            <v-list dense>
-                <v-list-item @click="">
-                    <v-list-item-action>
-                        <v-icon>dashboard</v-icon>
-                    </v-list-item-action>
-                    <v-list-item-content>
-                        <v-list-item-title>Dashboard</v-list-item-title>
-                    </v-list-item-content>
-                </v-list-item>
-                <v-list-item @click="">
-                    <v-list-item-action>
-                        <v-icon>settings</v-icon>
-                    </v-list-item-action>
-                    <v-list-item-content>
-                        <v-list-item-title>Settings</v-list-item-title>
-                    </v-list-item-content>
-                </v-list-item>
-            </v-list>
-        </v-navigation-drawer>-->
-
         <v-app-bar
                 app
                 clipped-left
                 class="grey darken-4"
         >
-            <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
-            <v-toolbar-title>Application</v-toolbar-title>
-            <v-container padding: 0>
-                <v-tabs  class="grey darken-4">
-                    <v-tab @click="renderPage_1">Welcome</v-tab>
-                    <v-tab @click="renderPage_2">Attributes</v-tab>
-                    <v-tab @click="renderPage_3">Controls</v-tab>
-                </v-tabs>
-            </v-container>
+            <v-row no-gutters>
+                <v-col cols="1">
+                    <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+                </v-col>
+                <v-col cols="4" class="d-flex align-center">
+                    <v-toolbar-title>Application</v-toolbar-title>
+                </v-col>
+                <v-col cols="7">
+                    <v-tabs  class="grey darken-4">
+                        <v-tab @click="renderPage_1">Welcome</v-tab>
+                        <v-tab @click="renderPage_2">Attributes</v-tab>
+                        <v-tab @click="renderPage_3">Controls</v-tab>
+                    </v-tabs>
+                </v-col>
+            </v-row>
         </v-app-bar>
+        <v-navigation-drawer
+                v-model="drawer"
+                color="grey darken-3"
 
-        <v-content class="d-flex flex-row">
-            <!--<v-container
-                    fluid
-                    fill-height
-            >
-                <v-layout
-                        align-center
-                        justify-center
-                >
-                    <v-flex shrink>
-                        <v-tooltip right>
-                            <template v-slot:activator="{ on }">
-                                <v-btn
-                                        :href="source"
-                                        icon
-                                        large
-                                        target="_blank"
-                                        v-on="on"
-                                >
-                                    <v-icon large>mdi-code-tags</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Source</span>
-                        </v-tooltip>
-                        <v-tooltip right>
-                            <template v-slot:activator="{ on }">
-                                <v-btn
-                                        icon
-                                        large
-                                        href="https://codepen.io/johnjleider/pen/bXNzZL"
-                                        target="_blank"
-                                        v-on="on"
-                                >
-                                    <v-icon large>mdi-codepen</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Codepen</span>
-                        </v-tooltip>
-                    </v-flex>
-                </v-layout>
-            </v-container>-->
-            <v-card class="grey darken-3" outlined tile style="height: 100%; width: 30%; float: left; position: relative">
-                <v-card v-if="pageAside === 1" ountlined tile >
-                    <v-card class="grey darken-2 mx-auto">
-                        <v-card-text>
-                            <div>Welcome,</div>
-                            <p class="display-1 text--primary">
-                                Friends!
-                            </p>
-                            <div class="text--primary">
-                                Here's my playground.<br>
-                                "an online city"
-                            </div>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-btn
-                                    text
-                                    color="blue accent-4"
-                                    onclick="window.location.href = './index.html'"
-                            >
-                                No, thanks.
-                            </v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-card>
-                <v-card v-if="pageAside === 2" ountlined tile >
-                    <v-card-title class="grey darken-3">
-                        Building Attributes
-                        <v-spacer></v-spacer>
-                        <v-text-field
-                                v-model="search"
-                                append-icon="mdi-magnify"
-                                label="Search"
-                                single-line
-                                hide-details
-                        ></v-text-field>
-                    </v-card-title>
-                    <v-data-table
-                            :headers="headers"
-                            :items="buildingAttrs"
-                            :search="search"
-                            class="grey darken-2"
-                            ountlined tile
-                            hide-default-header
-
-                    ></v-data-table>
-                </v-card>
-                <v-card v-if="pageAside === 3" ountlined tile >
-                    <v-card class="grey darken-3 mx-auto">
-
-                        <v-row dense>
-                            <v-col cols="12">
-                                <v-expansion-panels focusable>
-                                    <v-expansion-panel class="grey darken-2">
-
-                                        <v-expansion-panel-header>Camera Controls</v-expansion-panel-header>
-                                        <v-expansion-panel-content>
-                                            <v-divider></v-divider>
-                                            <v-card-subtitle>Current position:</v-card-subtitle>
-                                            <v-row justify="space-around" dense>
-                                                <v-col cols="6" class="d-flex align-center">
-                                                    <span
-                                                            class="display-1 font-weight-light mx-auto"
-
-                                                    >{{ camera_x }}</span>
-                                                </v-col>
-                                                <v-col cols="6" class="d-flex align-center">
-                                                    <span
-                                                            class="display-1 font-weight-light mx-auto"
-                                                            v-text="camera_y"
-                                                    ></span>
-                                                </v-col>
-                                            </v-row>
-                                            <v-card-subtitle>Change your camera position.</v-card-subtitle>
-                                            <v-row justify="space-around" dense>
-                                                <v-col cols="1"></v-col>
-                                                <v-col cols="8" class="d-flex align-center">
-                                                    <v-slider v-model="slider_x" min="0" max="1000" label="x :" hide-details></v-slider>
-                                                </v-col>
-                                                <v-col cols="2">
-                                                    <v-text-field
-                                                            v-model="slider_x"
-                                                            class="mt-0 pt-0"
-                                                            hide-details single-line
-                                                            dense outlined
-                                                            label="number"
-                                                    ></v-text-field>
-                                                </v-col>
-                                                <v-col cols="1"></v-col>
-                                                <v-col cols="1"></v-col>
-                                                <v-col cols="8" class="d-flex align-center">
-                                                    <v-slider v-model="slider_y" min="0" max="1000" label="y :" hide-details></v-slider>
-                                                </v-col>
-                                                <v-col cols="2">
-                                                    <v-text-field
-                                                            v-model="slider_y"
-                                                            class="mt-0 pt-0"
-                                                            hide-details single-line
-                                                            dense outlined
-                                                            label="number"
-                                                    ></v-text-field>
-                                                </v-col>
-                                                <v-col cols="1"></v-col>
-                                                <v-col cols="12">
-                                                    <v-card-actions>
-                                                        <v-btn @click="resetCamera" dark block color="primary">Reset camera</v-btn>
-                                                    </v-card-actions>
-                                                </v-col>
-                                            </v-row>
-                                        </v-expansion-panel-content>
-
-                                    </v-expansion-panel>
-                                    <!--<v-row no-gutters>
-                                        <v-col cols="9">
-                                            <v-card-text class="subtitle-1 font-weight-medium">Camera Controls</v-card-text>
-                                        </v-col>
-                                        <v-col cols="3" align="center" justify="center">
-                                            <v-container fluid>
-                                                <v-btn icon @click="show = !show">
-                                                    <v-icon class="mx-auto">{{ show ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-                                                </v-btn>
-                                            </v-container>
-                                        </v-col>
-                                    </v-row>
-                                    <v-expand-transition>
-                                        <div v-show="show">
-                                            <v-divider></v-divider>
-                                            <v-card-subtitle>Current position:</v-card-subtitle>
-                                            <v-row justify="space-around" dense>
-                                                <v-col cols="6" class="d-flex align-center">
-                                                    <span
-                                                            class="display-1 font-weight-light mx-auto"
-
-                                                    >{{ camera_x }}</span>
-                                                </v-col>
-                                                <v-col cols="6" class="d-flex align-center">
-                                                    <span
-                                                            class="display-1 font-weight-light mx-auto"
-                                                            v-text="camera_y"
-                                                    ></span>
-                                                </v-col>
-                                            </v-row>
-                                            <v-card-subtitle>Change your camera position.</v-card-subtitle>
-                                            <v-row justify="space-around" dense>
-                                                <v-col cols="1"></v-col>
-                                                <v-col cols="8" class="d-flex align-center">
-                                                    <v-slider v-model="slider_x" min="0" max="1000" label="x :" hide-details></v-slider>
-                                                </v-col>
-                                                <v-col cols="2">
-                                                    <v-text-field
-                                                            v-model="slider_x"
-                                                            class="mt-0 pt-0"
-                                                            hide-details single-line
-                                                            dense outlined
-                                                            label="number"
-                                                    ></v-text-field>
-                                                </v-col>
-                                                <v-col cols="1"></v-col>
-                                                <v-col cols="1"></v-col>
-                                                <v-col cols="8" class="d-flex align-center">
-                                                    <v-slider v-model="slider_y" min="0" max="1000" label="y :" hide-details></v-slider>
-                                                </v-col>
-                                                <v-col cols="2">
-                                                    <v-text-field
-                                                            v-model="slider_y"
-                                                            class="mt-0 pt-0"
-                                                            hide-details single-line
-                                                            dense outlined
-                                                            label="number"
-                                                    ></v-text-field>
-                                                </v-col>
-                                                <v-col cols="1"></v-col>
-                                                <v-col cols="12">
-                                                    <v-card-actions>
-                                                        <v-btn @click="resetCamera" dark block color="primary">Reset camera</v-btn>
-                                                    </v-card-actions>
-                                                </v-col>
-                                            </v-row>
-
-                                        </div>
-                                    </v-expand-transition>-->
-                                </v-expansion-panels>
-                            </v-col>
-
-                            <v-col
-                                    v-for="(item, i) in items"
-                                    :key="i"
-                                    cols="12"
-                            >
-                                <v-card
-                                        :color="item.color"
-                                        dark
-                                >
-                                    <div class="d-flex flex-no-wrap justify-space-between">
-                                        <div>
-                                            <v-card-title
-                                                    class="headline"
-                                                    v-text="item.title"
-                                            ></v-card-title>
-
-                                            <v-card-subtitle v-text="item.artist"></v-card-subtitle>
-                                        </div>
-
-                                        <v-avatar
-                                                class="ma-3"
-                                                size="125"
-                                                tile
-                                        >
-                                            <v-img :src="item.src"></v-img>
-                                        </v-avatar>
-                                    </div>
-                                </v-card>
-                            </v-col>
-                        </v-row>
-
-                    </v-card>
+                app
+                clipped
+                width="400"
+        >
+            <v-card v-if="pageAside === 1" ountlined tile >
+                <v-card class="grey darken-2 mx-auto">
+                    <!--<v-card-text>
+                        <div>Welcome,</div>
+                        <p class="display-1 text&#45;&#45;primary">
+                            Friends!
+                        </p>
+                        <div class="text&#45;&#45;primary">
+                            Here's my playground.<br>
+                            "an online city"
+                        </div>
+                    </v-card-text>-->
+                    <v-card-actions>
+                        <v-btn
+                                text
+                                color="primary"
+                                onclick="window.location.href = './index.html'"
+                        >
+                            Back
+                        </v-btn>
+                        <v-btn
+                                text
+                                color="primary"
+                                onclick="loadTableData()"
+                        >
+                            Request
+                        </v-btn>
+                    </v-card-actions>
                 </v-card>
             </v-card>
+            <v-card v-if="pageAside === 2" ountlined tile >
+                <v-card-title class="grey darken-3">
+                    Building Attributes
+                    <v-spacer></v-spacer>
+                    <v-text-field
+                            v-model="search"
+                            append-icon="mdi-magnify"
+                            label="Search"
+                            single-line
+                            hide-details
+                    ></v-text-field>
+                </v-card-title>
+                <v-data-table
+                        :headers="headers"
+                        :items="buildingAttrs"
+                        :search="search"
+                        class="grey darken-2"
+                        ountlined tile
+                        hide-default-header
 
+                ></v-data-table>
+            </v-card>
+            <v-card v-if="pageAside === 3" ountlined tile >
+                <v-card class="grey darken-3 mx-auto">
+
+                    <v-row dense>
+                        <v-col cols="12">
+                            <v-expansion-panels focusable>
+                                <v-expansion-panel class="grey darken-2">
+
+                                    <v-expansion-panel-header>Camera Controls</v-expansion-panel-header>
+                                    <v-expansion-panel-content>
+                                        <v-divider></v-divider>
+                                        <v-card-subtitle>Current position:</v-card-subtitle>
+                                        <v-row justify="space-around" dense>
+                                            <v-col cols="6" class="d-flex align-center">
+                                                    <span
+                                                            class="display-1 font-weight-light mx-auto"
+
+                                                    >{{ camera_x }}</span>
+                                            </v-col>
+                                            <v-col cols="6" class="d-flex align-center">
+                                                    <span
+                                                            class="display-1 font-weight-light mx-auto"
+                                                            v-text="camera_y"
+                                                    ></span>
+                                            </v-col>
+                                        </v-row>
+                                        <v-card-subtitle>Change your camera position.</v-card-subtitle>
+                                        <v-row justify="space-around" dense>
+                                            <v-col cols="1"></v-col>
+                                            <v-col cols="8" class="d-flex align-center">
+                                                <v-slider v-model="slider_x" min="0" max="1000" label="x :" hide-details></v-slider>
+                                            </v-col>
+                                            <v-col cols="2">
+                                                <v-text-field
+                                                        v-model="slider_x"
+                                                        class="mt-0 pt-0"
+                                                        hide-details single-line
+                                                        dense outlined
+                                                        label="number"
+                                                ></v-text-field>
+                                            </v-col>
+                                            <v-col cols="1"></v-col>
+                                            <v-col cols="1"></v-col>
+                                            <v-col cols="8" class="d-flex align-center">
+                                                <v-slider v-model="slider_y" min="0" max="1000" label="y :" hide-details></v-slider>
+                                            </v-col>
+                                            <v-col cols="2">
+                                                <v-text-field
+                                                        v-model="slider_y"
+                                                        class="mt-0 pt-0"
+                                                        hide-details single-line
+                                                        dense outlined
+                                                        label="number"
+                                                ></v-text-field>
+                                            </v-col>
+                                            <v-col cols="1"></v-col>
+                                            <v-col cols="12">
+                                                <v-card-actions>
+                                                    <v-btn @click="resetCamera" dark block color="primary">Reset camera</v-btn>
+                                                </v-card-actions>
+                                            </v-col>
+                                        </v-row>
+                                    </v-expansion-panel-content>
+
+                                </v-expansion-panel>
+
+                            </v-expansion-panels>
+                        </v-col>
+
+                        <v-col
+                                v-for="(item, i) in items"
+                                :key="i"
+                                cols="12"
+                        >
+                            <v-card
+                                    :color="item.color"
+                                    dark
+                            >
+                                <div class="d-flex flex-no-wrap justify-space-between">
+                                    <div>
+                                        <v-card-title
+                                                class="headline"
+                                                v-text="item.title"
+                                        ></v-card-title>
+
+                                        <v-card-subtitle v-text="item.artist"></v-card-subtitle>
+                                    </div>
+
+                                    <v-avatar
+                                            class="ma-3"
+                                            size="125"
+                                            tile
+                                    >
+                                        <v-img :src="item.src"></v-img>
+                                    </v-avatar>
+                                </div>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+
+                </v-card>
+            </v-card>
+        </v-navigation-drawer>
+        <v-content class="d-flex flex-row">
             <iframe
                     id="scene"
                     frameBorder="0"
                     src="./demo_city_module3.6_putuo.html"
                     scrolling="no"
-                    style="height: 100%; width: calc(100% - 30%); float: left; position: relative"
-            >
-            </iframe>
+                    style="height: 100%; width: 100%;"
+            ></iframe>
         </v-content>
-
         <v-footer app elevation="6">
             <span>&copy; 2020</span>
         </v-footer>
@@ -331,22 +214,32 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 <script type="text/javascript">
+    var xmlhttp;
+    var current_attr;
     var cameraControls = {
         x_set: 0,
         y_set: 0,
         isReset: 0
     };
     var table_attr = {
+        bid: {name: 'ID', value: null},
+        county: {name: 'county', value: null},
+        town: {name: 'town', value: null},
+        builtYear: {name: 'year of built', value: null},
         height: {name: 'height', value: null},
         floor: {name: 'floor', value: null},
         coordinate: {name: 'co-ordinate(x, y)', value: null},
+        circleNum: {name: 'circle', value: null},
+        floorArea: {name: 'floor area', value: null},
+        buildArea: {name: 'building area', value: null},
         boundSp: {name: 'bounding sphere radius', value: null},
         triangles: {name: 'triangles', value: null}
     };
     var vm = new Vue({
         el: '#app',
         vuetify: new Vuetify({theme: { dark: true },}),
-        data:() => ({ // () =>
+        data:() => ({
+            drawer: null,
             pageAside: 1,
             show: false,
             aside_width: "30%",
@@ -360,9 +253,16 @@
                 { text: 'Values', value: 'value', sortable: false }
             ],
             buildingAttrs: [
+                table_attr.bid,
+                table_attr.county,
+                table_attr.town,
+                table_attr.builtYear,
                 table_attr.height,
                 table_attr.floor,
                 table_attr.coordinate,
+                table_attr.circleNum,
+                table_attr.floorArea,
+                table_attr.buildArea,
                 table_attr.boundSp,
                 table_attr.triangles
             ],
@@ -382,21 +282,43 @@
             ]
         }),
         methods: {
-            renderPage_1: function () {
-                this.pageAside = 1;
-            },
-            renderPage_2: function () {
-                this.pageAside = 2;
-            },
-            renderPage_3: function () {
-                this.pageAside = 3;
-            },
-            resetCamera: function () {
-                //console.log(document.getElementById("scene").contentWindow.camera);
-                //document.getElementById("scene").contentWindow.reset_camera();
-                cameraControls.isReset = 1;
-            }
+            renderPage_1: function () {this.pageAside = 1},
+            renderPage_2: function () {this.pageAside = 2},
+            renderPage_3: function () {this.pageAside = 3},
+            resetCamera: function () {cameraControls.isReset = 1}
         }
     });
+</script>
+<script type="text/javascript">
+    function loadXMLDoc(url,cFunc)
+    {
+        if (window.XMLHttpRequest)
+        {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp=new XMLHttpRequest();
+        }
+        else
+        {// code for IE6, IE5
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange=cFunc;
+        xmlhttp.open("GET",url,true);
+        xmlhttp.send();
+    }
+    function loadTableData(file)
+    {
+        loadXMLDoc(file,function()
+        {
+            if (xmlhttp.readyState===4 && xmlhttp.status===200)
+            {
+                current_attr = JSON.parse( xmlhttp.response );
+                table_attr.county.value = current_attr["county"];
+                table_attr.town.value = current_attr["town"];
+                table_attr.circleNum.value = current_attr["circleNum"];
+                table_attr.builtYear.value = current_attr["builtYear"];
+                table_attr.floorArea.value = current_attr["floorArea"].toFixed(2);
+                table_attr.buildArea.value = current_attr["buildArea"].toFixed(2);
+            }
+        });
+    }
 </script>
 </html>
