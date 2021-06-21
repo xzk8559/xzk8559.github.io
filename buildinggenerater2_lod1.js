@@ -2,7 +2,7 @@ import * as THREE from "./three.js_115/build/three.module.js";
 import { Earcut } from './Earcut.js';
 
 
-export function BLOCKBuilding(cityMap, ib, floor_height, floor) {
+export function BLOCKBuilding_lod1(cityMap, ib, floor_height, floor) {
 
     let building;
 
@@ -12,7 +12,7 @@ export function BLOCKBuilding(cityMap, ib, floor_height, floor) {
     let normals = [];
     let colors = [];
 
-    let bounds = cityMap.buildings.bounds[ib].reverse();
+    let bounds = cityMap.buildings.bounds[ib];
     let pN = bounds.length;
 
     for (let i0 = 0; i0 < floor + 1; i0++) {
@@ -23,9 +23,6 @@ export function BLOCKBuilding(cityMap, ib, floor_height, floor) {
             let tmp = (i0 / floor - 1) * 0.03;
             vertices.push(x, y, z);
             colors.push( 0.18 + tmp, 0.18 + tmp, 0.2 + tmp );
-
-            /*let tmp = i0 / floor  * 0.2;
-            colors.push( 0.1 + tmp*0.4, 0.1 + tmp*0.6, 0.1 + tmp*0.7 );*/
 
             normals.push( 0, 1, 0.5 );
         }
@@ -55,20 +52,13 @@ export function BLOCKBuilding(cityMap, ib, floor_height, floor) {
     geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
     geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
     geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-    geometry.attributes.position.usage = THREE.DynamicDrawUsage;
-    geometry.attributes.color.usage = THREE.DynamicDrawUsage;
 
     geometry.computeVertexNormals();
-    // geometry.userData = {
-    //     buildingID: ib,
-    //     floor: floor,
-    //     floor_height: floor_height
-    // };
 
     let material = new THREE.MeshLambertMaterial( {vertexColors: THREE.VertexColors} );
     material.precision = "lowp";
     material.transparent = true;
-    material.opacity = 0.4;
+    material.opacity = 0.8;
 
     building = new THREE.Mesh( geometry, material );
     // if (ib===0){console.log(geometry)}
