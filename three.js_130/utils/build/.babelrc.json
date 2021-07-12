@@ -1,21 +1,3 @@
-{
-  "presets": [
-    [
-      "@babel/preset-env",
-      {
-        "modules": false,
-        "targets": ">1%",
-        "loose": true,
-        "bugfixes": true
-      }
-    ]
-  ],
-  "plugins": [
-    [
-      "@babel/plugin-proposal-class-properties",
-      {
-        "loose": true
-      }
-    ]
-  ]
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:78d006dd97b3368d69e52186644c05a184bb199093de5035702aec7f5676cd3e
+size 296

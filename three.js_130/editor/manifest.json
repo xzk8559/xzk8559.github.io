@@ -1,14 +1,3 @@
-{
-  "name": "Three.js Editor",
-  "short_name": "Three.js",
-  "start_url": ".",
-  "scope": ".",
-  "display": "standalone",
-  "icons": [
-    {
-      "src": "./images/icon.png",
-      "type": "image/png",
-      "sizes": "144x144"
-    }
-  ]
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:4abc25026942d6c54c8ddd03a28d72075d3071f572d2d2bb8c9f88f6d8d3ab66
+size 239
