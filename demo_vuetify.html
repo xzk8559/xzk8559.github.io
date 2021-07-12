@@ -22,10 +22,10 @@
                     <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
                 </v-col>
                 <v-col cols="4" class="d-flex align-center">
-                    <v-toolbar-title>Application</v-toolbar-title>
+                    <v-toolbar-title class="text-md-h6 font-weight-black">Pu-tuo Visualization</v-toolbar-title>
                 </v-col>
                 <v-col cols="7">
-                    <v-tabs  class="grey darken-4">
+                    <v-tabs class="grey darken-4">
                         <v-tab @click="renderPage_1">Welcome</v-tab>
                         <v-tab @click="renderPage_2">Attributes</v-tab>
                         <v-tab @click="renderPage_3">Controls</v-tab>
@@ -35,178 +35,321 @@
         </v-app-bar>
         <v-navigation-drawer
                 v-model="drawer"
-                color="grey darken-3"
-
+                color="grey darken-4"
                 app
                 clipped
                 width="400"
         >
             <v-card v-if="pageAside === 1" ountlined tile >
-                <v-card class="grey darken-2 mx-auto">
-                    <!--<v-card-text>
-                        <div>Welcome,</div>
-                        <p class="display-1 text&#45;&#45;primary">
-                            Friends!
-                        </p>
-                        <div class="text&#45;&#45;primary">
-                            Here's my playground.<br>
-                            "an online city"
-                        </div>
-                    </v-card-text>-->
-                    <v-card-actions>
-                        <v-btn
-                                text
-                                color="primary"
-                                onclick="window.location.href = './index.html'"
-                        >
-                            Back
-                        </v-btn>
-                        <v-btn
-                                text
-                                color="primary"
-                                onclick="loadTableData()"
-                        >
-                            Request
-                        </v-btn>
-                    </v-card-actions>
-                </v-card>
+                <v-card>
+                        <v-toolbar flat dense color="primary" dark
+                                   src="https://cdn.vuetifyjs.com/images/backgrounds/vbanner.jpg">
+                            <v-toolbar-title>User Profile</v-toolbar-title>
+                        </v-toolbar>
+                        <v-tabs vertical>
+                            <v-tab>
+                                <v-icon left>
+                                    mdi-account
+                                </v-icon>
+                                Option 1
+                            </v-tab>
+                            <v-tab>
+                                <v-icon left>
+                                    mdi-lock
+                                </v-icon>
+                                Option 2
+                            </v-tab>
+                            <v-tab>
+                                <v-icon left>
+                                    mdi-access-point
+                                </v-icon>
+                                Option 3
+                            </v-tab>
+                            <v-tab-item>
+                                <v-card flat>
+                                    <v-card-text>
+                                        <p>
+                                            Sed aliquam ultrices mauris. Donec posuere vulputate arcu. Morbi ac felis. Etiam feugiat lorem non metus. Sed a libero.
+                                        </p>
+
+                                        <p>
+                                            Nam ipsum risus, rutrum vitae, vestibulum eu, molestie vel, lacus. Aenean tellus metus, bibendum sed, posuere ac, mattis non, nunc. Aliquam lobortis. Aliquam lobortis. Suspendisse non nisl sit amet velit hendrerit rutrum.
+                                        </p>
+
+                                        <p class="mb-0">
+                                            Phasellus dolor. Fusce neque. Fusce fermentum odio nec arcu. Pellentesque libero tortor, tincidunt et, tincidunt eget, semper nec, quam. Phasellus blandit leo ut odio.
+                                        </p>
+                                    </v-card-text>
+                                </v-card>
+                            </v-tab-item>
+                            <v-tab-item>
+                                <v-card flat>
+                                    <v-card-text>
+                                        <p>
+                                            Morbi nec metus. Suspendisse faucibus, nunc et pellentesque egestas, lacus ante convallis tellus, vitae iaculis lacus elit id tortor. Sed mollis, eros et ultrices tempus, mauris ipsum aliquam libero, non adipiscing dolor urna a orci. Curabitur ligula sapien, tincidunt non, euismod vitae, posuere imperdiet, leo. Nunc sed turpis.
+                                        </p>
+
+                                        <p>
+                                            Suspendisse feugiat. Suspendisse faucibus, nunc et pellentesque egestas, lacus ante convallis tellus, vitae iaculis lacus elit id tortor. Proin viverra, ligula sit amet ultrices semper, ligula arcu tristique sapien, a accumsan nisi mauris ac eros. In hac habitasse platea dictumst. Fusce ac felis sit amet ligula pharetra condimentum.
+                                        </p>
+
+                                        <p>
+                                            Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero. Nam commodo suscipit quam. In consectetuer turpis ut velit. Sed cursus turpis vitae tortor. Aliquam eu nunc.
+                                        </p>
+
+                                        <p>
+                                            Etiam ut purus mattis mauris sodales aliquam. Ut varius tincidunt libero. Aenean viverra rhoncus pede. Duis leo. Fusce fermentum odio nec arcu.
+                                        </p>
+
+                                        <p class="mb-0">
+                                            Donec venenatis vulputate lorem. Aenean viverra rhoncus pede. In dui magna, posuere eget, vestibulum et, tempor auctor, justo. Fusce commodo aliquam arcu. Suspendisse enim turpis, dictum sed, iaculis a, condimentum nec, nisi.
+                                        </p>
+                                    </v-card-text>
+                                </v-card>
+                            </v-tab-item>
+                            <v-tab-item>
+                                <v-card flat>
+                                    <v-card-text>
+                                        <p>
+                                            Fusce a quam. Phasellus nec sem in justo pellentesque facilisis. Nam eget dui. Proin viverra, ligula sit amet ultrices semper, ligula arcu tristique sapien, a accumsan nisi mauris ac eros. In dui magna, posuere eget, vestibulum et, tempor auctor, justo.
+                                        </p>
+
+                                        <p class="mb-0">
+                                            Cras sagittis. Phasellus nec sem in justo pellentesque facilisis. Proin sapien ipsum, porta a, auctor quis, euismod ut, mi. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nam at tortor in tellus interdum sagittis.
+                                        </p>
+                                    </v-card-text>
+                                </v-card>
+                            </v-tab-item>
+                        </v-tabs>
+                    </v-card>
             </v-card>
-            <v-card v-if="pageAside === 2" ountlined tile >
-                <v-card-title class="grey darken-3">
-                    Building Attributes
-                    <v-spacer></v-spacer>
-                    <v-text-field
-                            v-model="search"
-                            append-icon="mdi-magnify"
-                            label="Search"
-                            single-line
-                            hide-details
-                    ></v-text-field>
-                </v-card-title>
-                <v-data-table
-                        :headers="headers"
-                        :items="buildingAttrs"
-                        :search="search"
-                        class="grey darken-2"
-                        ountlined tile
-                        hide-default-header
-
-                ></v-data-table>
+            <v-card v-if="pageAside === 2" ountlined tile flat class="grey darken-4 mx-auto">
+                <v-row dense>
+                    <v-col cols="12">
+                        <v-expansion-panels>
+                            <v-expansion-panel class="grey darken-4">
+                                <v-expansion-panel-header class="text-md-subtitle-1">Structures</v-expansion-panel-header>
+                                <v-expansion-panel-content class="pa-0">
+                                    <v-divider></v-divider>
+                                    <v-row justify="space-around">
+                                        <v-col cols="12"><v-card-actions class="px-4 py-6"><v-switch
+                                                v-model="switch_interact"
+                                                :label="`Interactive (double click to select)`"
+                                                dense
+                                                class="pa-0 ma-0"
+                                        ></v-switch></v-card-actions></v-col>
+                                    </v-row>
+                                    <v-data-table
+                                            dense
+                                            :headers="headers"
+                                            :items="buildingAttrs"
+                                            class="grey darken-4"
+                                            :items-per-page="itemsPerPage"
+                                            ountlined tile
+                                            hide-default-footer
+                                            hide-default-header
+                                    ></v-data-table>
+                                </v-expansion-panel-content>
+                            </v-expansion-panel>
+                            <v-expansion-panel class="grey darken-4">
+                                <v-expansion-panel-header class="text-md-subtitle-1">Earthquakes</v-expansion-panel-header>
+                                <v-expansion-panel-content>
+                                    <v-divider></v-divider>
+                                    <v-card class="pa-4 grey darken-4" flat >
+                                        <v-sparkline
+                                                :fill="false"
+                                                :gradient=['#42b3f4']
+                                                :line-width=1
+                                                :padding=8
+                                                :smooth=0
+                                                :value="eq_his"
+                                                auto-draw
+                                                align="center"
+                                        ></v-sparkline>
+                                    </v-card>
+                                    <v-divider></v-divider>
+                                    <v-card class="py-2 px-0 grey darken-4" flat >
+                                        <v-data-table
+                                                dense
+                                                :headers="headers"
+                                                :items="eqAttrs"
+                                                class="grey darken-4"
+                                                :items-per-page="itemsPerPage"
+                                                ountlined tile
+                                                hide-default-footer
+                                                hide-default-header
+                                        ></v-data-table>
+                                    </v-card>
+                                    <v-divider></v-divider>
+                                    <v-card flat class="py-4 px-0 grey darken-4">
+                                        <v-card-actions align="center">
+                                            <v-row>
+                                                <v-col cols="12" class="pb-0" >
+                                                    <v-btn @click="updateEqTable" dark block small color="primary">Update</v-btn>
+                                                </v-col>
+                                                <v-col cols="6">
+                                                    <v-btn @click="resetCamera" dark block small color="primary">Time-domain</v-btn>
+                                                </v-col>
+                                                <v-col cols="6">
+                                                    <v-btn @click="resetCamera" dark block small color="primary">Freq-domain</v-btn>
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-actions>
+                                    </v-card>
+                                </v-expansion-panel-content>
+                            </v-expansion-panel>
+                        </v-expansion-panels>
+                    </v-col>
+                </v-row>
             </v-card>
-            <v-card v-if="pageAside === 3" ountlined tile >
-                <v-card class="grey darken-3 mx-auto">
-
-                    <v-row dense>
-                        <v-col cols="12">
-                            <v-expansion-panels focusable>
-                                <v-expansion-panel class="grey darken-2">
-
-                                    <v-expansion-panel-header>Camera Controls</v-expansion-panel-header>
-                                    <v-expansion-panel-content>
-                                        <v-divider></v-divider>
-                                        <v-card-subtitle>Current position:</v-card-subtitle>
-                                        <v-row justify="space-around" dense>
-                                            <v-col cols="6" class="d-flex align-center">
-                                                    <span
-                                                            class="display-1 font-weight-light mx-auto"
-
-                                                    >{{ camera_x }}</span>
-                                            </v-col>
-                                            <v-col cols="6" class="d-flex align-center">
-                                                    <span
-                                                            class="display-1 font-weight-light mx-auto"
-                                                            v-text="camera_y"
-                                                    ></span>
-                                            </v-col>
-                                        </v-row>
-                                        <v-card-subtitle>Change your camera position.</v-card-subtitle>
-                                        <v-row justify="space-around" dense>
-                                            <v-col cols="1"></v-col>
-                                            <v-col cols="8" class="d-flex align-center">
-                                                <v-slider v-model="slider_x" min="0" max="1000" label="x :" hide-details></v-slider>
-                                            </v-col>
-                                            <v-col cols="2">
-                                                <v-text-field
-                                                        v-model="slider_x"
-                                                        class="mt-0 pt-0"
-                                                        hide-details single-line
-                                                        dense outlined
-                                                        label="number"
-                                                ></v-text-field>
-                                            </v-col>
-                                            <v-col cols="1"></v-col>
-                                            <v-col cols="1"></v-col>
-                                            <v-col cols="8" class="d-flex align-center">
-                                                <v-slider v-model="slider_y" min="0" max="1000" label="y :" hide-details></v-slider>
-                                            </v-col>
-                                            <v-col cols="2">
-                                                <v-text-field
-                                                        v-model="slider_y"
-                                                        class="mt-0 pt-0"
-                                                        hide-details single-line
-                                                        dense outlined
-                                                        label="number"
-                                                ></v-text-field>
-                                            </v-col>
-                                            <v-col cols="1"></v-col>
-                                            <v-col cols="12">
-                                                <v-card-actions>
-                                                    <v-btn @click="resetCamera" dark block color="primary">Reset camera</v-btn>
-                                                </v-card-actions>
-                                            </v-col>
-                                        </v-row>
-                                    </v-expansion-panel-content>
-
-                                </v-expansion-panel>
-
-                            </v-expansion-panels>
-                        </v-col>
-
-                        <v-col
-                                v-for="(item, i) in items"
-                                :key="i"
-                                cols="12"
-                        >
-                            <v-card
-                                    :color="item.color"
-                                    dark
-                            >
-                                <div class="d-flex flex-no-wrap justify-space-between">
-                                    <div>
-                                        <v-card-title
-                                                class="headline"
-                                                v-text="item.title"
-                                        ></v-card-title>
-
-                                        <v-card-subtitle v-text="item.artist"></v-card-subtitle>
-                                    </div>
-
-                                    <v-avatar
-                                            class="ma-3"
-                                            size="125"
-                                            tile
-                                    >
-                                        <v-img :src="item.src"></v-img>
-                                    </v-avatar>
-                                </div>
-                            </v-card>
-                        </v-col>
-                    </v-row>
-
-                </v-card>
+            <v-card v-if="pageAside === 3" ountlined tile flat class="grey darken-4 mx-auto">
+                <v-row dense>
+                    <v-col cols="12">
+                        <v-expansion-panels>
+                            <v-expansion-panel class="grey darken-4">
+                                <v-expansion-panel-header class="text-md-subtitle-1">Camera Controller</v-expansion-panel-header>
+                                <v-expansion-panel-content>
+                                    <v-divider></v-divider>
+                                    <v-card-subtitle>Current position:</v-card-subtitle>
+                                    <v-row justify="space-around" dense>
+                                        <v-col cols="6" class="d-flex align-center">
+                                                <span class="display-1 font-weight-light mx-auto">{{ camera_x }}</span>
+                                        </v-col>
+                                        <v-col cols="6" class="d-flex align-center">
+                                                <span class="display-1 font-weight-light mx-auto" v-text="camera_y"></span>
+                                        </v-col>
+                                    </v-row>
+                                    <v-card-subtitle>Change your camera position.</v-card-subtitle>
+                                    <v-row justify="space-around" dense>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="8" class="d-flex align-center">
+                                            <v-slider v-model="slider_x" min="0" max="1000" label="x :" hide-details></v-slider>
+                                        </v-col>
+                                        <v-col cols="2">
+                                            <v-text-field
+                                                    v-model="slider_x"
+                                                    class="mt-0 pt-0"
+                                                    hide-details single-line
+                                                    dense outlined
+                                                    label="number"
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="1"></v-col><v-col cols="1"></v-col>
+                                        <v-col cols="8" class="d-flex align-center">
+                                            <v-slider v-model="slider_y" min="0" max="1000" label="y :" hide-details></v-slider>
+                                        </v-col>
+                                        <v-col cols="2">
+                                            <v-text-field
+                                                    v-model="slider_y"
+                                                    class="mt-0 pt-0"
+                                                    hide-details single-line
+                                                    dense outlined
+                                                    label="number"
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="12">
+                                            <v-card-actions>
+                                                <v-btn @click="resetCamera" dark block small color="primary">Reset camera</v-btn>
+                                            </v-card-actions>
+                                        </v-col>
+                                    </v-row>
+                                </v-expansion-panel-content>
+                            </v-expansion-panel>
+                            <v-expansion-panel class="grey darken-4">
+                                <v-expansion-panel-header class="text-md-subtitle-1">Animation Controller</v-expansion-panel-header>
+                                <v-expansion-panel-content>
+                                    <v-divider></v-divider>
+                                    <v-card-actions class="py-4 px-4"><v-switch
+                                            v-model="switch_anim"
+                                            :label="`Animation`"
+                                            dense
+                                            class="py-0 px-0"
+                                            @click="switch_aniState"
+                                    ></v-switch></v-card-actions>
+                                    <v-divider></v-divider>
+                                    <v-card-subtitle>Time history: {{ eq_str }}</v-card-subtitle>
+                                    <v-row justify="space-around" dense>
+                                        <v-col cols="12">
+                                            <v-card class="px-4 pb-0 grey darken-4" flat>
+                                                <v-sparkline
+                                                    :fill="false"
+                                                    :gradient=['#42b3f4']
+                                                    :line-width=1
+                                                    :padding=8
+                                                    :smooth=0
+                                                    :value="eq_his"
+                                                    auto-draw
+                                                ></v-sparkline>
+                                            </v-card>
+                                        </v-col>
+                                        <v-col cols="12">
+                                            <v-card class="py-0 px-4 grey darken-4" flat>
+                                                <v-slider v-model="time_step" min="0" :max=max_time_step thumb-label hide-details
+                                                          :disabled="ani_disabled"></v-slider>
+                                            </v-card>
+                                        </v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="3"><v-card-subtitle class="pt-8 pb-0 px-0 mx-0">velocity</v-card-subtitle></v-col>
+                                        <v-col cols="7" class="d-flex align-center pt-8 pb-0 px-0 mx-0">
+                                            <v-slider v-model="slider_vel" min="0.0" max="5.0" step="0.1" thumb-label hide-details
+                                                      :disabled="ani_disabled"></v-slider>
+                                        </v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="3"><v-card-subtitle class="pu-0 px-0 mx-0">amplitude</v-card-subtitle></v-col>
+                                        <v-col cols="7" class="d-flex align-center pu-0 px-0 mx-0">
+                                            <v-slider v-model="slider_amp" min="0" max="10" step="0.1" thumb-label hide-details
+                                                      :disabled="ani_disabled"></v-slider>
+                                        </v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="6">
+                                            <v-card-actions class="pb-6">
+                                                <v-btn @click="pauseTimeline" dark block small color="primary"
+                                                       :disabled="ani_disabled">Pause / Start</v-btn>
+                                            </v-card-actions>
+                                        </v-col>
+                                        <v-col cols="6">
+                                            <v-card-actions class="pb-6">
+                                                <v-btn @click="resetTimeControl" dark block small color="primary"
+                                                       :disabled="ani_disabled">Reset Timeline</v-btn>
+                                            </v-card-actions>
+                                        </v-col>
+                                    </v-row>
+                                    <v-divider></v-divider>
+                                    <v-card-subtitle>Activate color / displacement animations:</v-card-subtitle>
+                                    <v-row justify="space-around" dense>
+                                        <v-col cols="6"><v-card-actions class="px-4 py-4"><v-switch
+                                                v-model="switch_col"
+                                                :label="`Color`"
+                                                dense class="pa-0 ma-0"
+                                                :disabled="ani_disabled"
+                                        ></v-switch></v-card-actions></v-col>
+                                        <v-col cols="6"><v-card-actions class="px-4 py-4"><v-switch
+                                                v-model="switch_dis"
+                                                :label="`Displacement`"
+                                                dense class="pa-0 ma-0"
+                                                :disabled="ani_disabled"
+                                        ></v-switch></v-card-actions></v-col>
+                                    </v-row>
+                                </v-expansion-panel-content>
+                            </v-expansion-panel>
+                        </v-expansion-panels>
+                    </v-col>
+                </v-row>
             </v-card>
         </v-navigation-drawer>
-        <v-content class="d-flex flex-row">
+        <v-main class="d-flex flex-row">
             <iframe
                     id="scene"
                     frameBorder="0"
-                    src="./demo_city_module3.7_putuo.html"
+                    src="./demo_city_module4.0_putuo.html"
                     scrolling="no"
                     style="height: 100%; width: 100%;"
             ></iframe>
-        </v-content>
-        <v-footer app elevation="6">
-            <span>&copy; 2020</span>
+        </v-main>
+        <v-footer app class="grey darken-4" elevation="12">
+            <span>&copy; 2021</span>
         </v-footer>
     </v-app>
 </div>
@@ -215,26 +358,51 @@
 <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 <script type="text/javascript">
     var xmlhttp;
-    var current_attr;
+    var current_attr, history;
     var cameraControls = {
         x_set: 0,
         y_set: 0,
         isReset: 0
     };
-    var table_attr = {
-        bid: {name: 'ID', value: null},
-        county: {name: 'county', value: null},
-        town: {name: 'town', value: null},
-        builtYear: {name: 'year of built', value: null},
-        height: {name: 'height', value: null},
-        floor: {name: 'floor', value: null},
-        coordinate: {name: 'co-ordinate(x, y)', value: null},
-        circleNum: {name: 'circle', value: null},
-        floorArea: {name: 'floor area', value: null},
-        buildArea: {name: 'building area', value: null},
-        boundSp: {name: 'bounding sphere radius', value: null},
-        triangles: {name: 'triangles', value: null}
+    var timeControls = { isReset: 1 };
+    var aniControls = {
+        animation: 0,
+        color: 0,
+        displacement: 0,
+        velocity: 1,
+        amplitude: 1
     };
+
+    var table_attr = {
+        structure: {
+            needsUpdate: 1,
+            isInteractive: 0,
+            attributes: {
+                bid: {name: 'ID', value: null},
+                county: {name: 'county', value: null},
+                town: {name: 'town', value: null},
+                builtYear: {name: 'year of built', value: null},
+                height: {name: 'height', value: null},
+                floor: {name: 'floor', value: null},
+                coordinate: {name: 'coordinate', value: null},
+                circleNum: {name: 'circle', value: null},
+                floorArea: {name: 'floor area', value: null},
+                buildArea: {name: 'building area', value: null},
+                boundSp: {name: 'bounding sphere radius', value: null},
+                triangles: {name: 'triangles', value: null},
+            }
+        },
+        earthquake: {
+            needsUpdate: 1,
+            attributes: {
+                eid: {name: 'ID', value: null},
+                pga: {name: 'PGA', value: null},
+                duration: {name: 'duration', value: null},
+                cav: {name: 'CAV', value: null}
+            }
+        }
+    };
+
     var vm = new Vue({
         el: '#app',
         vuetify: new Vuetify({theme: { dark: true },}),
@@ -247,45 +415,58 @@
             slider_y: cameraControls.y_set,
             camera_x: 0,
             camera_y: 0,
-            search: '',
+            eq_str: '',
+            eq_his: [0, 0, 0, 0, 0, 0, -1, -1, 3, 3, -2.5, -2.5, 1.5, 1.5, -1, -1, 3, 3, -2.5, -2.5, 1.5, 1.5, -1.8, -1.8, 1, 1, -1, -1, 0, 0, 0, 0, 0, 0],
+            time_step: 0,
+            max_time_step: 20,
+            switch_anim: aniControls.animation,
+            switch_col: aniControls.color,
+            switch_dis: aniControls.displacement,
+            ani_disabled: true,
+            switch_interact: table_attr.structure.isInteractive,
+            slider_vel: 1,
+            slider_vel_backup: 1,
+            ani_paused: false,
+            slider_amp: 1,
+            itemsPerPage: -1,
             headers: [
                 {text: 'Attributes', align: 'start', sortable: false, value: 'name',},
                 { text: 'Values', value: 'value', sortable: false }
             ],
             buildingAttrs: [
-                table_attr.bid,
-                table_attr.county,
-                table_attr.town,
-                table_attr.builtYear,
-                table_attr.height,
-                table_attr.floor,
-                table_attr.coordinate,
-                table_attr.circleNum,
-                table_attr.floorArea,
-                table_attr.buildArea,
-                table_attr.boundSp,
-                table_attr.triangles
+                table_attr.structure.attributes.bid,
+                table_attr.structure.attributes.county,
+                table_attr.structure.attributes.town,
+                table_attr.structure.attributes.builtYear,
+                table_attr.structure.attributes.height,
+                table_attr.structure.attributes.floor,
+                table_attr.structure.attributes.coordinate,
+                table_attr.structure.attributes.circleNum,
+                table_attr.structure.attributes.floorArea,
+                table_attr.structure.attributes.buildArea,
+                table_attr.structure.attributes.boundSp,
+                table_attr.structure.attributes.triangles
             ],
-            items: [
-                {
-                    color: '#1F7087',
-                    src: 'https://cdn.vuetifyjs.com/images/cards/foster.jpg',
-                    title: 'Supermodel',
-                    artist: 'Foster the People',
-                },
-                {
-                    color: '#952175',
-                    src: 'https://cdn.vuetifyjs.com/images/cards/halcyon.png',
-                    title: 'Halcyon Days',
-                    artist: 'Ellie Goulding',
-                },
-            ]
+            eqAttrs: [
+                table_attr.earthquake.attributes.eid,
+                table_attr.earthquake.attributes.pga,
+                table_attr.earthquake.attributes.duration,
+                table_attr.earthquake.attributes.cav
+            ],
         }),
         methods: {
             renderPage_1: function () {this.pageAside = 1},
             renderPage_2: function () {this.pageAside = 2},
             renderPage_3: function () {this.pageAside = 3},
-            resetCamera: function () {cameraControls.isReset = 1}
+            resetCamera: function () {cameraControls.isReset = 1},
+            resetTimeControl: function () {timeControls.isReset = 1},
+            updateEqTable: function () {table_attr.earthquake.needsUpdate = 1},
+            pauseTimeline: function () { this.ani_paused = !this.ani_paused },
+            switch_aniState: function () {
+                this.ani_disabled = !this.ani_disabled;
+                this.ani_paused = !this.ani_disabled;
+                this.switch_col = !this.ani_disabled;
+            }
         }
     });
 </script>
@@ -311,12 +492,12 @@
             if (xmlhttp.readyState===4 && xmlhttp.status===200)
             {
                 current_attr = JSON.parse( xmlhttp.response );
-                table_attr.county.value = current_attr["county"];
-                table_attr.town.value = current_attr["town"];
-                table_attr.circleNum.value = current_attr["circleNum"];
-                table_attr.builtYear.value = current_attr["builtYear"];
-                table_attr.floorArea.value = current_attr["floorArea"].toFixed(2);
-                table_attr.buildArea.value = current_attr["buildArea"].toFixed(2);
+                table_attr.structure.attributes.county.value = current_attr["county"];
+                table_attr.structure.attributes.town.value = current_attr["town"];
+                table_attr.structure.attributes.circleNum.value = current_attr["circleNum"];
+                table_attr.structure.attributes.builtYear.value = current_attr["builtYear"];
+                table_attr.structure.attributes.floorArea.value = current_attr["floorArea"].toFixed(2);
+                table_attr.structure.attributes.buildArea.value = current_attr["buildArea"].toFixed(2);
             }
         });
     }

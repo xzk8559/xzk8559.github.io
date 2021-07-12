@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <title> PuTuo_Demo </title>
+    <meta charset="utf-8">
+    <link type="text/css" rel="stylesheet" href="./main.css">
+</head>
+<body>
+
+<div id="WebGL-output"></div>
+<div id="Stats-output"></div>
+
+<script type="module">
+
+    import { GUI } from "./three.js_130/examples/jsm/libs/dat.gui.module.js";
+    import { MapControls } from './three.js_130/examples/jsm/controls/OrbitControls.js';
+    import * as THREE from "./three.js_130/build/three.module.js";
+    import { BLOCKBuilding } from "./buildinggenerater2_putuo.js";
+    import { BLOCKBuilding_merge } from "./buildinggenerater_merge_3.js";
+    import { BLOCKBuilding_wireframe } from "./buildingedges.js";
+    import { quadTree } from "./Quadtree_putuo.js";
+    import { getRenderList } from "./getRenderList_v2.js";
+    import Stats from "./three.js_130/examples/jsm/libs/stats.module.js";
+    import { Lut } from './three.js_130/examples/jsm/math/Lut.js'; // custom map added
+
+    /*********************
+     * @param parent.vm
+     * @param {Object} parent.cameraControls
+     * @param {Object} parent.timeControls
+     * @param {Object} parent.table_attr
+     * @param {Function} parent.loadTableData
+     *
+     * @param {Object} map.buildings - Metadata.
+     * @param {number} map.buildings.number
+     * @param {Array} map.buildings.bounds
+     *
+     * @param {Array} dcj_8219_his.dcj_his
+     ********************/
+
+    let map, demo, node;
+    let stats, orbitControls, gui;
+    let renderer, scene, camera, rayCaster;
+    let plane, light, building, obj, floor, building_merge, wf_merge;
+    let mouse = new THREE.Vector2(), INTERSECTED;
+    let treeIteration = 6; // for n = 100,000, iteration > 6 recommended
+    let dcj_8219, dcj_8219_his, eq_his, eq_str;
+    let lut, sprite, scene_lut, camera_lut;
+    let zoom;
+
+    let eq_list = {
+        ElCentro_ns: 'elcentro_ns_eq_his.json',
+        KiK_net_2000_ns: './data/EQ_KiKnet_2000_ns_his.json',
+        KiK_net_2001_ns: './data/EQ_KiKnet_2001_ns_his.json',
+        KiK_net_2002_ns: './data/EQ_KiKnet_2002_ns_his.json',
+        KiK_net_2003_ns: './data/EQ_KiKnet_2003_ns_his.json',
+        KiK_net_2004_ns: './data/EQ_KiKnet_2004_ns_his.json',
+        KiK_net_2005_ns: './data/EQ_KiKnet_2005_ns_his.json',
+    };
+    let rsp_list = {
+        ElCentro_ns: 'elcentro_ns_8219.json',
+        KiK_net_2000_ns: './data/IDR_KiKnet_2000_ns.json',
+        KiK_net_2001_ns: './data/IDR_KiKnet_2001_ns.json',
+        KiK_net_2002_ns: './data/IDR_KiKnet_2002_ns.json',
+        KiK_net_2003_ns: './data/IDR_KiKnet_2003_ns.json',
+        KiK_net_2004_ns: './data/IDR_KiKnet_2004_ns.json',
+        KiK_net_2005_ns: './data/IDR_KiKnet_2005_ns.json',
+    };
+
+    let state = {
+        animated : false,
+        extruded_model : true,
+        wireframe : true,
+        extruded_model_num : 1000,
+        color_animated : false,
+        displacement_animated : false,
+        Amplitude : 1.0,
+        Velocity : 1.0,
+        Sight_Distance : 300,
+        Update_response : update_IDR,
+        eq_select : Object.keys( eq_list )[ 0 ],
+        IDR_type : 'maximum'
+    };
+
+    function _time_controller(){
+
+        this.last_time = 0;
+        this.last_step = 0;
+        this.current_time = 0;
+        this.current_step = 0;
+
+        this.update = function(paused){
+            if (this.last_time === 0){this.last_time = new Date().getTime()}
+            this.current_time = new Date().getTime();
+
+            let time_increment
+            if (!paused) { time_increment = ( this.current_time - this.last_time ) / 1000 }
+            else { time_increment = 0 }
+
+            this.current_step = time_increment * sample_rate * parent.vm.slider_vel + this.last_step;
+            this.last_time = this.current_time;
+            this.last_step = this.current_step;
+        }
+    }
+
+    let times = new _time_controller();
+    let sample_rate = 50,
+        displace = 0,
+        interpolation = 0,
+        max_time_step = 0;
+
+    init();
+    animate();
+
+    function init() {
+
+        initData();
+        initStats();
+        initRender();
+        initScene();
+        initCamera();
+        initPlane();
+        initLight();
+        initModel();
+        initLut();
+        initControls();
+        initGui();
+
+        document.getElementById("WebGL-output").appendChild(renderer.domElement);
+        document.getElementById("WebGL-output").addEventListener("dblclick", setBuildingData);
+        window.addEventListener( 'resize', onWindowResize, false );
+        document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+        function initData(){
+            map = jsonLoader('Pu_Tuo_visualization.json', './');
+            dcj_8219 = jsonLoader('elcentro_ns_8219.json', './');
+            dcj_8219_his = jsonLoader('elcentro_ns_8219_his.json', './');
+            eq_his = jsonLoader('elcentro_ns_eq_his.json', './').eq_his;
+            max_time_step = dcj_8219_his.dcj_his[0].length;
+        }
+        function initStats() {
+
+            stats = new Stats();
+
+            stats.setMode(0); // 0: fps, 1: ms
+
+            // Align top-left
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '0px';
+            stats.domElement.style.top = '0px';
+
+            document.getElementById("Stats-output").appendChild(stats.domElement);
+
+        }
+        function initRender(){
+            renderer = new THREE.WebGLRenderer({antialias: true, precision: 'lowp'});
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = false;
+            renderer.autoClear = false;
+        }
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color( '#474747' );
+            scene.fog = new THREE.FogExp2( '#8d8d8d', 0.0006 );
+
+            scene_lut = new THREE.Scene();
+        }
+        function initCamera() {
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1800);
+            camera.position.set( 20, 600, 20);
+            camera.layers.enable( 0 ); // enabled by default
+            camera.layers.enable( 1 );
+            camera.layers.enable( 2 );
+
+            rayCaster = new THREE.Raycaster();
+            rayCaster.layers.set( 1 );
+
+            // Lut
+            camera_lut = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 1, 2 );
+            // camera_lut.position.set( -0.8, 0.2, 1 );
+        }
+        function initPlane() {
+            let planeGeometry = new THREE.PlaneGeometry(1200, 1000, 1, 1);
+            let planeMaterial = new THREE.MeshLambertMaterial({color: '#0b0c0e'});
+            plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = -0.5 * Math.PI;
+            plane.position.set( 600, 0, 500);
+            plane.layers.set( 0 );
+            scene.add(plane);
+            plane.renderOrder = 1;
+        }
+        function initLight() {
+            light = new THREE.AmbientLight('#ffffff', 1.5);
+            scene.add( light );
+        }
+        function initModel(){
+            scene.add(  new THREE.AxesHelper(10) );
+            update_extruded_model();
+            update_merged_model();
+            update_wireframe();
+            node = quadTree( map, building, treeIteration );
+        }
+        function initLut(){
+            lut = new Lut( 'custom', 16 );
+            sprite = new THREE.Sprite( new THREE.SpriteMaterial( {
+                map: new THREE.CanvasTexture( lut.createCanvas() )
+            } ) );
+            sprite.scale.set( .035, .25, .05 );
+            sprite.position.set( .95, -.8, -1 );
+            scene_lut.add( sprite );
+            lut.setMax( 1 );
+            lut.setMin( 0 );
+        }
+        function initControls() {
+            orbitControls = new MapControls(camera, renderer.domElement);
+            orbitControls.maxPolarAngle = 0.65 * Math.PI / 2;
+            orbitControls.minPolarAngle = 0.1 * Math.PI / 2;
+            orbitControls.target.set( 0, 0, 0 );
+            //orbitControls.addEventListener( 'change', render ); // 使用animate方法时删除
+
+            orbitControls.enableDamping = false;
+            orbitControls.dampingFactor = 0.3;
+            orbitControls.enableZoom = true;
+            orbitControls.maxDistance = 1500;
+            orbitControls.minDistance = 50;
+
+            orbitControls.mouseButtons = {
+                LEFT: THREE.MOUSE.PAN,
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.ROTATE
+            };
+
+            orbitControls.update();
+            orbitControls.saveState ();
+        }
+        function initGui() {
+            gui = new GUI( { width: 300 } );
+
+            let folder = gui.addFolder( "General Options" )
+            folder.add( state, "extruded_model" );
+            folder.__controllers[ 0 ].name( "ExtrudedModel" );
+            folder.add( state, "wireframe" );
+            folder.__controllers[ 1 ].name( "Wireframe" );
+            folder.open();
+
+            let folder3 = gui.addFolder( "Performance Options" );
+            folder3.add( state, "extruded_model_num", 0, map.buildings.number ).step(1.0);
+            folder3.__controllers[ 0 ].name( `ExtrudedModel Number (<${map.buildings.number})` );
+            folder3.add( state, 'Sight_Distance', 100, 300 ).step(5);
+            folder3.open();
+
+            let folder4 = gui.addFolder( "Seismic Response Options" );
+            folder4.add( state, 'eq_select', Object.keys( eq_list ) ).onChange( function () { updateEqTable() } );
+            folder4.add( state, 'IDR_type', ['maximum', 'residual'] );
+            folder4.add( state, 'Update_response' );
+            folder4.open();
+        }
+        function onWindowResize() {
+
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize( width, height );
+
+        }
+        function onDocumentMouseMove( event ) {
+            event.preventDefault();
+            mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+            mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        }
+
+    }
+    function animate() {
+
+        stats.update();
+        orbitControls.update();
+        requestAnimationFrame( animate );
+        render();
+
+        function render() {
+
+            zoom = Math.ceil( camera.position.y / 50 );
+            updateParentPage();
+
+            let fru = computeFrustumFromCamera(camera);
+            let renderList = getRenderList( fru, node, treeIteration );
+            let renderNum = Math.min(state.extruded_model_num, renderList.length);
+
+            if ( state.extruded_model ){
+                if ( parent.vm.switch_anim){
+                    times.update( parent.vm.ani_paused );
+                    let time_step_int = Math.ceil(times.current_step);
+                    parent.vm.time_step = time_step_int / sample_rate;
+
+                    for (let i = 0; i < renderNum; i++){
+
+                        let ib = renderList[i];
+                        if ( zoom < 5 && object_in_sight( building[ib], camera ) ){
+                            scene.add(building[ib]);
+                            building[ib].visible = true;
+
+                            if (time_step_int < building[ib].userData.his.length){
+                                let pN = map.buildings.bounds[ib].length;
+
+                                building[ib].geometry.attributes.position.needsUpdate = true;
+                                building[ib].geometry.attributes.color.needsUpdate = true;
+
+                                for (let i = 0; i < floor[ib]+1; i++) {
+                                    let inter = i / floor[ib];
+                                    if (parent.vm.switch_dis){
+                                        displace = building[ib].userData.his[time_step_int] * parent.vm.slider_amp * inter * 20;
+                                        for (let n = 0; n < pN; n++){
+                                            building[ib].geometry.attributes.position.array[(i * pN + n) * 3] = map.buildings.bounds[ib][n][0] + displace;
+                                        }
+                                    }
+                                    if (parent.vm.switch_col){
+                                        let occlusion = (floor[ib] - i) / floor[ib] * 0.2;
+                                        interpolation = Math.abs(building[ib].userData.his[time_step_int]) / 0.008 * 0.6 + 0.2;
+                                        for (let n = 0; n < pN; n++){
+                                            building[ib].geometry.attributes.color.array[(i * pN + n) * 3] = interpolation - occlusion;
+                                            building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 1] = 1 - interpolation - occlusion;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else {
+                    scene.add(building_merge);
+                    for (let i = 0; i < renderNum; i++){
+                        let ib = renderList[i];
+                        if ( zoom < 6 && object_in_sight( building[ib], camera ) ) scene.add(building[ib]);
+                    }
+                }
+            }
+            if ( state.wireframe ) scene.add(wf_merge);
+
+            if ( parent.vm.switch_interact ){
+
+                rayCaster.setFromCamera( mouse, camera );
+                let intersects = rayCaster.intersectObjects( scene.children );
+                if ( intersects.length > 0 ) {
+                    if ( (INTERSECTED !== intersects[ 0 ].object) && (intersects[ 0 ].object.type !== 'LineSegments') ) {
+                        // 还原hex
+                        if ( INTERSECTED ) {
+                            INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex)
+                            INTERSECTED.material.transparent = true;
+                            INTERSECTED.visible = false;
+                        }
+                        INTERSECTED = intersects[ 0 ].object;
+                        INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+                        INTERSECTED.material.emissive.setHex( '#ff9600' );
+
+                        INTERSECTED.material.transparent = false;
+                        INTERSECTED.visible = true;
+                    }
+                }
+                else {
+                    if ( INTERSECTED ) {
+                        INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex )
+                        INTERSECTED.material.transparent = true;
+                        INTERSECTED.visible = false;
+                    }
+                    INTERSECTED = null;
+                }
+
+            }
+
+            // console.log(renderer.info);
+            renderer.clear();
+            renderer.render( scene, camera );
+            renderer.render( scene_lut, camera_lut );
+        }
+
+    }
+
+    function reset_camera() {
+
+        let direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+
+        camera.position.set(parent.vm.slider_x, 60, parent.vm.slider_y);
+        camera.getWorldPosition(orbitControls.target);
+        orbitControls.target.addScaledVector(direction, 50);
+        orbitControls.update();
+
+    }
+    function reset_animation() {
+        times.last_step = 0;
+    }
+    function computeFrustumFromCamera(camera) {
+        let frustum = new THREE.Frustum();
+        frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+        return frustum;
+    }
+    function object_in_sight(object, camera) {
+        let x2 = Math.pow(object.geometry.attributes.position.array[0] - camera.position.x, 2);
+        let z2 = Math.pow(object.geometry.attributes.position.array[2] - camera.position.z, 2);
+        return ( x2 + z2 < Math.pow( state.Sight_Distance / 2, 2 ) )
+    }
+
+    async function setBuildingData() {
+        if (INTERSECTED) {
+            let geo = INTERSECTED.geometry;
+            let file = "./request/bid_" + INTERSECTED.userData.bid.toString() + ".json";
+            parent.loadTableData(file);
+            parent.table_attr.structure.attributes.bid.value = INTERSECTED.userData.bid;
+            parent.table_attr.structure.attributes.height.value = INTERSECTED.userData.height;
+            parent.table_attr.structure.attributes.floor.value = INTERSECTED.userData.floor;
+            parent.table_attr.structure.attributes.coordinate.value = "(" + geo.boundingSphere.center.x.toFixed(1).toString() + ", " + geo.boundingSphere.center.z.toFixed(1).toString() + ")";
+            parent.table_attr.structure.attributes.boundSp.value = geo.boundingSphere.radius.toFixed(2);
+            parent.table_attr.structure.attributes.triangles.value = geo.attributes.position.count;
+        }
+    }
+    function jsonLoader( filename, path ) {
+        let url = path + filename;
+        let jsonRequest = new XMLHttpRequest();
+        jsonRequest.open( "GET", url, false );
+        jsonRequest.send( null );
+        return JSON.parse( jsonRequest.response )
+    }
+    function updateEqTable(){
+        let file = eq_list[state.eq_select];
+        let temp = jsonLoader(file, './')
+        eq_his = temp.eq_his;
+        eq_str = temp.eq;
+
+        parent.vm.eq_his = eq_his;
+        parent.table_attr.earthquake.attributes.eid.value = eq_str;
+        parent.table_attr.earthquake.attributes.pga.value = 0.3;
+        parent.table_attr.earthquake.attributes.duration.value = 20.0;
+        parent.table_attr.earthquake.attributes.cav.value = '-';
+    }
+    function update_merged_model(){
+        building_merge = BLOCKBuilding_merge( map, dcj_8219, state.IDR_type );
+        scene.add(building_merge);
+        building_merge.layers.enable( 2 );
+        building_merge.frustumCulled = false;
+        building_merge.onAfterRender = function () { scene.remove(building_merge) }
+    }
+    function update_wireframe(){
+        wf_merge = BLOCKBuilding_wireframe( building_merge );
+        scene.add(wf_merge);
+        wf_merge.layers.enable( 2 );
+        wf_merge.layers.frustumCulled = false;
+        wf_merge.onAfterRender = function () {
+            scene.remove(wf_merge);
+        }
+    }
+    function update_extruded_model(){
+        floor = [];
+        building = [];
+        obj = [];
+
+        for (let ib = 0; ib < map.buildings.number; ib++) {
+
+            let floor_height = 3.0
+            floor[ib] = Math.floor( map.buildings.height[ib] / floor_height );
+
+            building[ib] = BLOCKBuilding( map, ib, floor_height, floor[ib] );
+            building[ib].userData = {
+                bid: ib,
+                height: map.buildings.height[ib],
+                floor: Math.floor(map.buildings.height[ib] / 3.0),
+                his: dcj_8219_his.dcj_his[ib]
+            };
+
+            scene.add(building[ib]);
+
+            building[ib].layers.enable( 1 );
+            building[ib].frustumCulled = false;
+
+            building[ib].onAfterRender = function () {
+                scene.remove(building[ib]);
+                building[ib].visible = false;
+
+                if (state.color_animated && times.current_step > building[ib].userData.his.length){
+
+                    for (let i = 0; i < floor[ib]+1; i++) {
+                        let tmp = (i / floor[ib] - 1) * 0.03;
+                        let pN = map.buildings.bounds[ib].length;
+                        for (let n = 0; n < pN; n++) {
+
+                            building[ib].geometry.attributes.color.array[(i * pN + n) * 3] = 0.18 + tmp;
+                            building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 1] = 0.18 + tmp;
+                            building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 2] = 0.2 + tmp;
+                        }
+                    }
+                    building[ib].geometry.attributes.color.needsUpdate = true;
+                }
+            };
+        }
+    }
+    function update_IDR(){
+        // maximum inter-story drift ratio
+        let file = rsp_list[state.eq_select];
+        dcj_8219 = jsonLoader(file, './');
+        update_merged_model();
+    }
+    function updateParentPage(){
+        parent.vm.camera_x = camera.position.x.toFixed(1);
+        parent.vm.camera_y = camera.position.z.toFixed(1);
+        if (parent.cameraControls.isReset === 1){
+            reset_camera();
+            parent.cameraControls.isReset = 0;
+        }
+        if (parent.timeControls.isReset === 1){
+            reset_animation();
+            parent.timeControls.isReset = 0;
+        }
+        if (parent.table_attr.earthquake.needsUpdate === 1){
+            updateEqTable();
+            parent.table_attr.earthquake.needsUpdate = 0;
+        }
+    }
+</script>
+</body>
+</html>

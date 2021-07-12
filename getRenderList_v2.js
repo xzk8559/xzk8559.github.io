@@ -1,4 +1,4 @@
-import * as THREE from "./three.js_115/build/three.module.js";
+import * as THREE from "./three.js_130/build/three.module.js";
 
 // 四叉树递归寻找渲染object
 export function getRenderList( frustum, node, iteration ){
