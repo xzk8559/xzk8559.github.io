@@ -9,6 +9,7 @@ export function BLOCKBuilding_merge(cityMap, dcj, IDR_type) {
     let IDR;
     if ( IDR_type === 'maximum' ){ IDR = dcj.dcj_max }
     else{ IDR = dcj.dcj_res }
+    let max_IDR = Math.max( ...IDR );
 
     let floor_heights = cityMap.buildings.height;
     let geometries = [];
@@ -27,7 +28,7 @@ export function BLOCKBuilding_merge(cityMap, dcj, IDR_type) {
         let red, green, blue
         if (IDR[ib] < 1e-8){ red = 0.18; green = 0.18; blue = 0.2;}
         else{
-            red = Math.min(IDR[ib], 0.8) / 0.008 * 0.6 + 0.2;
+            red = IDR[ib] / max_IDR * 0.6 + 0.2;
             green = 1 - red;
             blue = 0.4;
         }

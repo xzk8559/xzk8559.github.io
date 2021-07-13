@@ -35,6 +35,7 @@
      * @param {number} map.buildings.number
      * @param {Array} map.buildings.bounds
      *
+     * @param {Array} dcj_8219.dcj_max
      * @param {Array} dcj_8219_his.dcj_his
      ********************/
 
@@ -44,7 +45,7 @@
     let plane, light, building, obj, floor, building_merge, wf_merge;
     let mouse = new THREE.Vector2(), INTERSECTED;
     let treeIteration = 6; // for n = 100,000, iteration > 6 recommended
-    let dcj_8219, dcj_8219_his, eq_his, eq_str;
+    let dcj_8219, dcj_8219_his, eq_his, eq_str, max_IDR;
     let lut, sprite, scene_lut, camera_lut;
     let zoom;
 
@@ -65,6 +66,15 @@
         KiK_net_2003_ns: './data/IDR_KiKnet_2003_ns.json',
         KiK_net_2004_ns: './data/IDR_KiKnet_2004_ns.json',
         KiK_net_2005_ns: './data/IDR_KiKnet_2005_ns.json',
+    };
+    let his_list = {
+        ElCentro_ns: './data/IDR_elcentro_ns_his.json',
+        KiK_net_2000_ns: './data/IDR_KiKnet_2000_ns_his.json',
+        KiK_net_2001_ns: './data/IDR_KiKnet_2001_ns_his.json',
+        KiK_net_2002_ns: './data/IDR_KiKnet_2002_ns_his.json',
+        KiK_net_2003_ns: './data/IDR_KiKnet_2003_ns_his.json',
+        KiK_net_2004_ns: './data/IDR_KiKnet_2004_ns_his.json',
+        KiK_net_2005_ns: './data/IDR_KiKnet_2005_ns_his.json',
     };
 
     let state = {
@@ -134,9 +144,10 @@
         function initData(){
             map = jsonLoader('Pu_Tuo_visualization.json', './');
             dcj_8219 = jsonLoader('elcentro_ns_8219.json', './');
-            dcj_8219_his = jsonLoader('elcentro_ns_8219_his.json', './');
+            dcj_8219_his = jsonLoader('IDR_elcentro_ns_his.json', './data/');
             eq_his = jsonLoader('elcentro_ns_eq_his.json', './').eq_his;
-            max_time_step = dcj_8219_his.dcj_his[0].length;
+            max_time_step = dcj_8219_his.length;
+            max_IDR = Math.max(...dcj_8219.dcj_max);
         }
         function initStats() {
 
@@ -303,7 +314,7 @@
                             scene.add(building[ib]);
                             building[ib].visible = true;
 
-                            if (time_step_int < building[ib].userData.his.length){
+                            if (time_step_int < building[ib].userData.his.length && building[ib].userData.his.length > 1){
                                 let pN = map.buildings.bounds[ib].length;
 
                                 building[ib].geometry.attributes.position.needsUpdate = true;
@@ -312,14 +323,14 @@
                                 for (let i = 0; i < floor[ib]+1; i++) {
                                     let inter = i / floor[ib];
                                     if (parent.vm.switch_dis){
-                                        displace = building[ib].userData.his[time_step_int] * parent.vm.slider_amp * inter * 20;
+                                        displace = building[ib].userData.his[time_step_int] * parent.vm.slider_amp * inter / 1000 / max_IDR / 5;
                                         for (let n = 0; n < pN; n++){
                                             building[ib].geometry.attributes.position.array[(i * pN + n) * 3] = map.buildings.bounds[ib][n][0] + displace;
                                         }
                                     }
                                     if (parent.vm.switch_col){
                                         let occlusion = (floor[ib] - i) / floor[ib] * 0.2;
-                                        interpolation = Math.abs(building[ib].userData.his[time_step_int]) / 0.008 * 0.6 + 0.2;
+                                        interpolation = Math.abs(building[ib].userData.his[time_step_int]) / 1000 / max_IDR * 0.6 + 0.2;
                                         for (let n = 0; n < pN; n++){
                                             building[ib].geometry.attributes.color.array[(i * pN + n) * 3] = interpolation - occlusion;
                                             building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 1] = 1 - interpolation - occlusion;
@@ -424,6 +435,7 @@
         jsonRequest.send( null );
         return JSON.parse( jsonRequest.response )
     }
+
     function updateEqTable(){
         let file = eq_list[state.eq_select];
         let temp = jsonLoader(file, './')
@@ -501,6 +513,14 @@
         let file = rsp_list[state.eq_select];
         dcj_8219 = jsonLoader(file, './');
         update_merged_model();
+        max_IDR = Math.max(...dcj_8219.dcj_max);
+
+        let file2 = his_list[state.eq_select];
+        dcj_8219_his = jsonLoader(file2, './');
+        max_time_step = dcj_8219_his.length;
+        for (let ib = 0; ib < map.buildings.number; ib++) {
+            building[ib].userData.his = dcj_8219_his.dcj_his[ib]
+        }
     }
     function updateParentPage(){
         parent.vm.camera_x = camera.position.x.toFixed(1);
