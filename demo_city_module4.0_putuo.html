@@ -50,7 +50,7 @@
     let zoom;
 
     let eq_list = {
-        ElCentro_ns: 'elcentro_ns_eq_his.json',
+        ElCentro_ns: './data/elcentro_ns_eq_his.json',
         KiK_net_2000_ns: './data/EQ_KiKnet_2000_ns_his.json',
         KiK_net_2001_ns: './data/EQ_KiKnet_2001_ns_his.json',
         KiK_net_2002_ns: './data/EQ_KiKnet_2002_ns_his.json',
@@ -59,7 +59,7 @@
         KiK_net_2005_ns: './data/EQ_KiKnet_2005_ns_his.json',
     };
     let rsp_list = {
-        ElCentro_ns: 'elcentro_ns_8219.json',
+        ElCentro_ns: './data/elcentro_ns_8219.json',
         KiK_net_2000_ns: './data/IDR_KiKnet_2000_ns.json',
         KiK_net_2001_ns: './data/IDR_KiKnet_2001_ns.json',
         KiK_net_2002_ns: './data/IDR_KiKnet_2002_ns.json',
@@ -142,10 +142,10 @@
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
         function initData(){
-            map = jsonLoader('Pu_Tuo_visualization.json', './');
-            dcj_8219 = jsonLoader('elcentro_ns_8219.json', './');
+            map = jsonLoader('Pu_Tuo_visualization.json', './data/');
+            dcj_8219 = jsonLoader('elcentro_ns_8219.json', './data/');
             dcj_8219_his = jsonLoader('IDR_elcentro_ns_his.json', './data/');
-            eq_his = jsonLoader('elcentro_ns_eq_his.json', './').eq_his;
+            eq_his = jsonLoader('elcentro_ns_eq_his.json', './data/').eq_his;
             max_time_step = dcj_8219_his.length;
             max_IDR = Math.max(...dcj_8219.dcj_max);
         }
