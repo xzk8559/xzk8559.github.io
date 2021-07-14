@@ -433,7 +433,8 @@
         let jsonRequest = new XMLHttpRequest();
         jsonRequest.open( "GET", url, false );
         jsonRequest.send( null );
-        return JSON.parse( jsonRequest.response )
+        // console.log( jsonRequest )
+        return JSON.parse( jsonRequest.responseText )
     }
 
     function updateEqTable(){
