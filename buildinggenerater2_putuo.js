@@ -65,7 +65,7 @@ export function BLOCKBuilding(cityMap, ib, floor_height, floor) {
     //     floor_height: floor_height
     // };
 
-    let material = new THREE.MeshLambertMaterial( {vertexColors: THREE.VertexColors} );
+    let material = new THREE.MeshLambertMaterial( {vertexColors: THREE.VertexColors, side: THREE.DoubleSide} );
     material.precision = "lowp";
     material.transparent = true;
     material.opacity = 0.4;
