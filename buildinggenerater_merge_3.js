@@ -85,7 +85,7 @@ export function BLOCKBuilding_merge(cityMap, dcj, eid, IDR_type) {
 
     let mergedGeometry = BufferGeometryUtils.mergeBufferGeometries( geometries );
 
-    let material = new THREE.MeshLambertMaterial( {vertexColors: THREE.VertexColors} );
+    let material = new THREE.MeshLambertMaterial( {vertexColors: THREE.VertexColors, side: THREE.DoubleSide} );
     material.precision = "lowp";
     material.transparent = true;
     material.opacity = 0.6;
