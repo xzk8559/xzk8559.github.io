@@ -80,7 +80,7 @@ let state = {
     Update_response : update_IDR,
     eq_select : 0,
     IDR_type : 'maximum',
-    eq_animation : 'main_field',
+    eq_animation : 'main_field2',
     road : true,
     Road_color : '#292c2f',
     Bound_color : '#e36c11'
@@ -119,7 +119,7 @@ function init() {
     function initData(){
         map = jsonLoader('meta.json', './data/PuTuo/');
         dcj = jsonLoader('IDR_500_8219.json', './data/');
-        dcj_his = jsonLoader('IDR_history_MainShock_field1.json', './data/PuTuo/');
+        dcj_his = jsonLoader('h_mainshock_field.json', './data/PuTuo/');
         // dcj_his.dcj_his = dcj_his.dcj_his.concat(jsonLoader('IDR_history_MainShock_field_b.json', './data/PuTuo/').dcj_his);
         // console.log(dcj_his)
         eq_his = jsonLoader('EQ_history.json', './data/').eq_his;
