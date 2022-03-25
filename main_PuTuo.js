@@ -1,28 +1,31 @@
-import { GUI } from "./three.js_130/examples/jsm/libs/dat.gui.module.js";
-import { MapControls } from './three.js_130/examples/jsm/controls/OrbitControls.js';
-import * as THREE from "./three.js_130/build/three.module.js";
-import { BLOCKBuilding } from "./buildinggenerater2_putuo.js";
-import { BLOCKBuilding_merge } from "./buildinggenerater_merge_3.js";
-import { BLOCKBuilding_wireframe } from "./buildingedges.js";
-import { quadTree } from "./Quadtree_putuo.js";
-import { getRenderList } from "./getRenderList_v2.js";
-import Stats from "./three.js_130/examples/jsm/libs/stats.module.js";
+// -----------------------------------------------------Three.js--------------------------------------------------------
+import * as THREE from './three.js_130/build/three.module.js';
+
+import Stats from './three.js_130/examples/jsm/libs/stats.module.js';
+import { GUI } from './three.js_130/examples/jsm/libs/dat.gui.module.js';
 import { GPUStatsPanel } from './three.js_130/examples/jsm/utils/GPUStatsPanel.js';
-import { Lut } from './three.js_130/examples/jsm/math/Lut.js'; // custom map added
+import { MapControls } from './three.js_130/examples/jsm/controls/OrbitControls.js';
 
-
-import { EffectComposer } from './three.js_130/examples/jsm/postprocessing/EffectComposer.js';
+import { FXAAShader } from './three.js_130/examples/jsm/shaders/FXAAShader.js';
 import { RenderPass } from './three.js_130/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from './three.js_130/examples/jsm/postprocessing/ShaderPass.js';
 import { OutlinePass } from './three.js_130/examples/jsm/postprocessing/OutlinePass.js';
-import { FXAAShader } from './three.js_130/examples/jsm/shaders/FXAAShader.js';
-
-import { Bound_LineSegments } from "./boundary.js";
-import { Road_LineSegments } from "./road.js";
-
+import { EffectComposer } from './three.js_130/examples/jsm/postprocessing/EffectComposer.js';
+// ------------------------------------------------------custom---------------------------------------------------------
+import { Lut } from './scripts/Lut.js';
+import { quadTree } from './scripts/Quadtree.js';
+import { Road_LineSegments } from './road.js';
+import { Bound_LineSegments } from './boundary.js';
 import { TimeController } from './scripts/TimeController.js';
+import { getRenderList } from './scripts/getRenderList_v2.js';
+
+import { BLOCKBuilding } from './buildinggenerater2_putuo.js';
+import { BLOCKBuilding_merge } from './buildinggenerater_merge_3.js';
+import { BLOCKBuilding_wireframe } from './buildingedges.js';
+
 import { initLight } from './scripts/initLight.js';
 import { initPlane } from './scripts/initPlane.js';
+// ---------------------------------------------------------------------------------------------------------------------
 
 /*********************
  * @param parent.vm
@@ -31,30 +34,37 @@ import { initPlane } from './scripts/initPlane.js';
  * @param {Object} parent.table_attr
  * @param {Function} parent.loadTableData
  *
- * @param {Object} map.buildings - Metadata.
+ * @param {Object} map.buildings
  * @param {number} map.buildings.number
  * @param {Array} map.buildings.bounds
  *
  * @param {Array} dcj.dcj_max
- * @param {Array} dcj_8219_his.dcj_his
+ * @param {Array} dcj_his.dcj_his
  ********************/
 
-let map, demo, node;
+let map, node;
 let stats, gpuPanel, orbitControls, gui;
 let renderer, scene, camera, raycaster;
 let building, obj, floor, building_merge, wf_merge;
 let mouse = new THREE.Vector2(), selectedObject, nearestObject;
-let treeIteration = 6; // for n = 100,000, iteration > 6 recommended
-let dcj, dcj_8219_his, eq_his, max_IDR, max_IDR_his;
+let treeIteration = 6;
+
+let dcj, dcj_his, eq_his, max_IDR, max_IDR_his; // earthquake & response
 let lut, sprite, scene_lut, camera_lut;
 let road, road_pos, bound, bound_pos;
 let zoom, composer, outlinePass, effectFXAA;
 
+// let his_list = {
+//     main_field: 'maxIDR_history_MainShock_field1.json',
+//     main_field2: 'maxIDR_history_MainShock_field2.json',
+//     main_field3: 'maxIDR_history_MainShock_field3.json',
+//     main_field4: 'maxIDR_history_MainShock_field4.json',
+// };
 let his_list = {
-    demo: 'IDR_random_field_his.json',
-    main_nofield: 'IDR_history_mainshock_nofield.json',
-    main_field: 'IDR_history_mainshock_field.json',
-    sequ_field: 'IDR_history_sequshock_field.json',
+    main_field: 'h_mainshock_nofield.json',
+    main_field2: 'h_mainshock_field.json',
+    // main_field3: 'h_sequshock_field.json',
+    // main_field4: 'maxIDR_history_MainShock_field4.json',
 };
 
 let state = {
@@ -70,14 +80,14 @@ let state = {
     Update_response : update_IDR,
     eq_select : 0,
     IDR_type : 'maximum',
-    eq_animation : 'main_nofield',
+    eq_animation : 'main_field',
     road : true,
     Road_color : '#292c2f',
     Bound_color : '#e36c11'
 };
 
 let times = new TimeController();
-let sample_rate = 12.5,
+let sample_rate = 50,
     displace = 0,
     interpolation = 0,
     max_time_step = 0;
@@ -92,8 +102,8 @@ function init() {
     initRender();
     initScene();
     initCamera();
-    initPlane(scene);
-    initLight(scene);
+    initPlane( scene );
+    initLight( scene );
     initRoad();
     initModel();
     iniPostprocess()
@@ -101,24 +111,24 @@ function init() {
     initControls();
     initGui();
 
-    document.getElementById("WebGL-output").appendChild( renderer.domElement );
-    document.getElementById("WebGL-output").addEventListener( "dblclick", setBuildingData );
     window.addEventListener( 'resize', onWindowResize, false );
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    // renderer.domElement.style.touchAction = 'none';
-    // renderer.domElement.addEventListener( 'pointermove', onPointerMove );
+    document.getElementById("WebGL-output").appendChild( renderer.domElement );
+    document.getElementById("WebGL-output").addEventListener( "dblclick", setBuildingData );
 
     function initData(){
-        map = jsonLoader('Pu_Tuo_visualization.json', './data/');
+        map = jsonLoader('meta.json', './data/PuTuo/');
         dcj = jsonLoader('IDR_500_8219.json', './data/');
-        dcj_8219_his = jsonLoader('IDR_random_field_his.json', './data/');
+        dcj_his = jsonLoader('IDR_history_MainShock_field1.json', './data/PuTuo/');
+        // dcj_his.dcj_his = dcj_his.dcj_his.concat(jsonLoader('IDR_history_MainShock_field_b.json', './data/PuTuo/').dcj_his);
+        // console.log(dcj_his)
         eq_his = jsonLoader('EQ_history.json', './data/').eq_his;
-        max_time_step = dcj_8219_his.length;
-        parent.vm.max_time_step = Math.ceil(dcj_8219_his.length / sample_rate);
+        max_time_step = dcj_his.length;
+        parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
         max_IDR = dcj.dcj_max_top;
-        max_IDR_his = dcj_8219_his.dcj_max;
-        road_pos = jsonLoader('ROAD_5700.json', './data/').roads;
-        bound_pos = jsonLoader('Boundary_Putuo.json', './data/').boundary;
+        max_IDR_his = dcj_his.dcj_max;
+        road_pos = jsonLoader('road.json', './data/PuTuo/').roads;
+        bound_pos = jsonLoader('boundary.json', './data/PuTuo/').boundary;
     }
     function initStats() {
 
@@ -246,7 +256,7 @@ function init() {
         let folder3 = gui.addFolder( "Performance Options" );
         folder3.add( state, "extruded_model_num", 0, map.buildings.number ).step(1.0);
         folder3.__controllers[ 0 ].name( `ExtrudedModel Number (<${map.buildings.number})` );
-        folder3.add( state, 'Sight_Distance', 100, 500 ).step(5);
+        folder3.add( state, 'Sight_Distance', 100, 1000 ).step(5);
         folder3.open();
 
         let folder4 = gui.addFolder( "Seismic Response Options" );
@@ -362,8 +372,8 @@ function animate() {
                                     let occlusion = (floor[ib] - i) / floor[ib] * 0.2;
                                     interpolation = Math.abs(building[ib].userData.his[time_step_int]) / max_IDR_his * 0.6 + 0.2;//Math.max(...max_IDR)
                                     for (let n = 0; n < pN; n++) {
-                                        building[ib].geometry.attributes.color.array[(i * pN + n) * 3] = interpolation * 1.5 - occlusion;
-                                        building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 1] = 1 - interpolation * 1.5 - occlusion;
+                                        building[ib].geometry.attributes.color.array[(i * pN + n) * 3] = interpolation * 2.0 - occlusion;
+                                        building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 1] = 1 - interpolation * 2.0 - occlusion;
                                     }
                                 }
                             }
@@ -497,40 +507,20 @@ function update_extruded_model(){
     for (let ib = 0; ib < map.buildings.number; ib++) {
 
         let floor_height = 3.0
-        floor[ib] = Math.floor( map.buildings.height[ib] / floor_height );
+        floor[ib] = Math.max(Math.floor( map.buildings.height[ib] / floor_height ), 1);
 
         building[ib] = BLOCKBuilding( map, ib, floor_height, floor[ib] );
         building[ib].userData = {
             bid: ib,
             height: map.buildings.height[ib],
-            floor: Math.floor(map.buildings.height[ib] / 3.0),
-            his: dcj_8219_his.dcj_his[ib]
+            floor: Math.max(Math.floor(map.buildings.height[ib] / 3.0), 1),
+            his: dcj_his.dcj_his[ib]
         };
 
         scene.add(building[ib]);
 
         building[ib].layers.enable( 1 );
         building[ib].frustumCulled = false;
-
-        // building[ib].onAfterRender = function () {
-        //     scene.remove(building[ib]);
-        //     building[ib].visible = false;
-        //
-        //     if (state.color_animated && times.current_step > building[ib].userData.his.length){
-        //
-        //         for (let i = 0; i < floor[ib]+1; i++) {
-        //             let tmp = (i / floor[ib] - 1) * 0.03;
-        //             let pN = map.buildings.bounds[ib].length;
-        //             for (let n = 0; n < pN; n++) {
-        //
-        //                 building[ib].geometry.attributes.color.array[(i * pN + n) * 3] = 0.18 + tmp;
-        //                 building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 1] = 0.18 + tmp;
-        //                 building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 2] = 0.2 + tmp;
-        //             }
-        //         }
-        //         building[ib].geometry.attributes.color.needsUpdate = true;
-        //     }
-        // };
     }
 }
 function update_IDR(){
@@ -540,11 +530,13 @@ function update_IDR(){
     update_merged_model( state.eq_select );
 
     let file2 = his_list[state.eq_animation];
-    dcj_8219_his = jsonLoader(file2, './data/');
-    max_time_step = dcj_8219_his.length;
-    parent.vm.max_time_step = Math.ceil(dcj_8219_his.length / sample_rate);
+    dcj_his = jsonLoader(file2, './data/PuTuo/');
+    // dcj_his = jsonLoader('IDR_history_MainShock_field_a.json', './data/PuTuo/');
+    // dcj_his.dcj_his = dcj_his.dcj_his.concat(jsonLoader('IDR_history_MainShock_field_b.json', './data/PuTuo/').dcj_his);
+    max_time_step = dcj_his.length;
+    parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
     for (let ib = 0; ib < map.buildings.number; ib++) {
-        building[ib].userData.his = dcj_8219_his.dcj_his[ib]
+        building[ib].userData.his = dcj_his.dcj_his[ib]
     }
 }
 function updateParentPage(){
