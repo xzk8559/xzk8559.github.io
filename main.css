@@ -22,7 +22,28 @@ body {
 	width: 350px;
 	height: 300px;
 	padding: 5px;
-	//border:1px solid #ffffff
+}
+.footer {
+	position: fixed;
+	bottom: 0;
+	right: 50px;
+	text-align: right;
+	padding: 10px 0;
+  }
+.footer a {
+  color: white;
+  text-decoration: none;
+}
+.box .button {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+}
+.box .button a {
+	color: white;
+	text-decoration: none;
+	padding: 10px 20px;
+	margin-left: 10px;
 }
 h1.title {
 	font-size: 48px;
