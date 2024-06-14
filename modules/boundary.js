@@ -1,9 +1,9 @@
 // import { Line2 } from './three.js_130/examples/jsm/lines/Line2.js';
 // import { LineMaterial } from './three.js_130/examples/jsm/lines/LineMaterial.js';
 // import { LineGeometry } from './three.js_130/examples/jsm/lines/LineGeometry.js';
-import { Line2 } from './modules/three-r165/examples/jsm/lines/Line2.js';
-import { LineMaterial } from './modules/three-r165/examples/jsm/lines/LineMaterial.js';
-import { LineGeometry } from './modules/three-r165/examples/jsm/lines/LineGeometry.js';
+import { Line2 } from './three-r165/examples/jsm/lines/Line2.js';
+import { LineMaterial } from './three-r165/examples/jsm/lines/LineMaterial.js';
+import { LineGeometry } from './three-r165/examples/jsm/lines/LineGeometry.js';
 
 export function Bound_LineSegments( pos, color ) {
 

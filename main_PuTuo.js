@@ -15,8 +15,8 @@ import {EffectComposer}   from './modules/three-r165/examples/jsm/postprocessing
 // ------------------------------------------------------custom---------------------------------------------------------
 import { Lut }                      from './modules/Lut.js';
 import { quadTree }                 from './modules/Quadtree.js';
-import { Road_LineSegments }        from './road.js';
-import { Bound_LineSegments }       from './boundary.js';
+import { Road_LineSegments }        from './modules/road.js';
+import { Bound_LineSegments }       from './modules/boundary.js';
 import { TimeController }           from './modules/TimeController.js';
 import { getRenderList }            from './modules/getRenderList_v2.js';
 
