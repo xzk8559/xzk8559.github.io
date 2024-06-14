@@ -1,6 +1,5 @@
-// import * as THREE from '../three.js_130/build/three.module.js';
 import * as THREE from '../modules/three-r165/build/three.module.js';
-import { Earcut } from '../Earcut.js';
+import { Earcut } from './Earcut.js';
 
 export class BlockBuilding {
     constructor(map, ib, floorHeight) {
