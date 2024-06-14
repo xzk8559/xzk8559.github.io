@@ -2,7 +2,7 @@
 // import { LineMaterial } from './three.js_130/examples/jsm/lines/LineMaterial.js';
 import { Line2 } from './three-r165/examples/jsm/lines/Line2.js';
 import { LineMaterial } from './three-r165/examples/jsm/lines/LineMaterial.js';
-import { LineGeometry } from './three-r165/examples/jsm/lines/LineGeometry.js';
+import { LineGeometry } from './LineGeometry.js';
 
 export function Road_LineSegments( pos, color ) {
 
