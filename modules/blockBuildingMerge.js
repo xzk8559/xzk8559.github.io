@@ -1,6 +1,5 @@
 import * as THREE from '../modules/three-r165/build/three.module.js';
-import { Earcut } from '../Earcut.js';
-
+import { Earcut } from './Earcut.js';
 import { mergeGeometries } from '../modules/three-r165/examples/jsm/utils/BufferGeometryUtils.js';
 
 
