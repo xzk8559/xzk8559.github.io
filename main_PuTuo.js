@@ -1,30 +1,35 @@
 // -----------------------------------------------------Three.js--------------------------------------------------------
-import * as THREE from './three.js_130/build/three.module.js';
+import * as THREE from './modules/three-r165/build/three.module.js';
 
-import Stats from './three.js_130/examples/jsm/libs/stats.module.js';
-import { GUI } from './three.js_130/examples/jsm/libs/dat.gui.module.js';
-import { GPUStatsPanel } from './three.js_130/examples/jsm/utils/GPUStatsPanel.js';
-import { MapControls } from './three.js_130/examples/jsm/controls/OrbitControls.js';
+import Stats              from './modules/three-r165/examples/jsm/libs/stats.module.js';
+import {GUI}              from './modules/three-r165/examples/jsm/libs/lil-gui.module.min.js';
+import {GPUStatsPanel}    from './modules/three-r165/examples/jsm/utils/GPUStatsPanel.js';
+import {OrbitControls}    from './modules/three-r165/examples/jsm/controls/OrbitControls.js';
 
-import { FXAAShader } from './three.js_130/examples/jsm/shaders/FXAAShader.js';
-import { RenderPass } from './three.js_130/examples/jsm/postprocessing/RenderPass.js';
-import { ShaderPass } from './three.js_130/examples/jsm/postprocessing/ShaderPass.js';
-import { OutlinePass } from './three.js_130/examples/jsm/postprocessing/OutlinePass.js';
-import { EffectComposer } from './three.js_130/examples/jsm/postprocessing/EffectComposer.js';
+import {FXAAShader}       from './modules/three-r165/examples/jsm/shaders/FXAAShader.js';
+import {RenderPass}       from './modules/three-r165/examples/jsm/postprocessing/RenderPass.js';
+import {ShaderPass}       from './modules/three-r165/examples/jsm/postprocessing/ShaderPass.js';
+import {OutlinePass}      from './modules/three-r165/examples/jsm/postprocessing/OutlinePass.js';
+import {OutputPass}       from './modules/three-r165/examples/jsm/postprocessing/OutputPass.js';
+import {EffectComposer}   from './modules/three-r165/examples/jsm/postprocessing/EffectComposer.js';
 // ------------------------------------------------------custom---------------------------------------------------------
-import { Lut } from './scripts/Lut.js';
-import { quadTree } from './scripts/Quadtree.js';
-import { Road_LineSegments } from './road.js';
-import { Bound_LineSegments } from './boundary.js';
-import { TimeController } from './scripts/TimeController.js';
-import { getRenderList } from './scripts/getRenderList_v2.js';
+import { Lut }                      from './modules/Lut.js';
+import { quadTree }                 from './modules/Quadtree.js';
+import { Road_LineSegments }        from './road.js';
+import { Bound_LineSegments }       from './boundary.js';
+import { TimeController }           from './modules/TimeController.js';
+import { getRenderList }            from './modules/getRenderList_v2.js';
 
-import { BLOCKBuilding } from './buildinggenerater2_putuo.js';
-import { BLOCKBuilding_merge } from './buildinggenerater_merge_3.js';
-import { BLOCKBuilding_wireframe } from './buildingedges.js';
+import { BlockBuilding }            from './modules/blockBuilding.js';
+import { BlockBuildingMerge }       from './modules/blockBuildingMerge.js';
+import { BlockBuildingWireframe }   from './modules/blockBuildingWireframe.js';
 
-import { initLight } from './scripts/initLight.js';
-import { initPlane } from './scripts/initPlane.js';
+import { initLight }                from './modules/initLight.js';
+import { initPlane }                from './modules/initPlane.js';
+
+import { updateExtrudedModelsAnimated, updateExtrudedModelsStatic } from './modules/utils.js';
+
+
 // ---------------------------------------------------------------------------------------------------------------------
 
 /*********************
@@ -45,14 +50,14 @@ import { initPlane } from './scripts/initPlane.js';
 let map, node;
 let stats, gpuPanel, orbitControls, gui;
 let renderer, scene, camera, raycaster;
-let building, obj, floor, building_merge, wf_merge;
+let building, building_merge, wf_merge;
 let mouse = new THREE.Vector2(), selectedObject, nearestObject;
 let treeIteration = 6;
 
-let dcj, dcj_his, eq_his, max_IDR, max_IDR_his; // earthquake & response
+let dcj, dcj_his, eq_his, max_IDR, maxIDRHis; // earthquake & response
 let lut, sprite, scene_lut, camera_lut;
 let road, road_pos, bound, bound_pos;
-let zoom, composer, outlinePass, effectFXAA;
+let composer, outlinePass, effectFXAA;
 
 // let his_list = {
 //     main_field: 'maxIDR_history_MainShock_field1.json',
@@ -88,16 +93,16 @@ let state = {
 
 let times = new TimeController();
 let sample_rate = 50,
-    displace = 0,
-    interpolation = 0,
     max_time_step = 0;
 
-init();
-animate();
+document.addEventListener('DOMContentLoaded', async () => {
+    await init();
+    animate();
+});
 
-function init() {
+async function init() {
 
-    initData();
+    await initData();
     initStats();
     initRender();
     initScene();
@@ -115,23 +120,36 @@ function init() {
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     document.getElementById("WebGL-output").appendChild( renderer.domElement );
     document.getElementById("WebGL-output").addEventListener( "dblclick", setBuildingData );
-
-    function initData(){
-        map = jsonLoader('meta.json', './data/PuTuo/');
-        dcj = jsonLoader('IDR_500_8219.json', './data/');
-        dcj_his = jsonLoader('h_mainshock_field.json', './data/PuTuo/');
-        // dcj_his.dcj_his = dcj_his.dcj_his.concat(jsonLoader('IDR_history_MainShock_field_b.json', './data/PuTuo/').dcj_his);
-        // console.log(dcj_his)
-        eq_his = jsonLoader('EQ_history.json', './data/').eq_his;
-        max_time_step = dcj_his.length;
-        parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
-        max_IDR = dcj.dcj_max_top;
-        max_IDR_his = dcj_his.dcj_max;
-        road_pos = jsonLoader('road.json', './data/PuTuo/').roads;
-        bound_pos = jsonLoader('boundary.json', './data/PuTuo/').boundary;
+    async function initData() {
+        NProgress.start();
+        try {
+            const [mapData, dcjData, dcjHisData, eqHisData, roadPosData, boundPosData] = await Promise.all([
+                jsonLoader('meta.json', './data/PuTuo/'),
+                jsonLoader('IDR_500_8219.json', './data/'),
+                jsonLoader('h_mainshock_field.json', './data/PuTuo/'),
+                jsonLoader('EQ_history.json', './data/'),
+                jsonLoader('road.json', './data/PuTuo/'),
+                jsonLoader('boundary.json', './data/PuTuo/')
+            ]);
+    
+            map = mapData;
+            dcj = dcjData;
+            dcj_his = dcjHisData;
+            eq_his = eqHisData.eq_his;
+            road_pos = roadPosData.roads;
+            bound_pos = boundPosData.boundary;
+            max_time_step = dcj_his.length;
+            max_IDR = dcj.dcj_max_top;
+            maxIDRHis = dcj_his.dcj_max;
+            parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
+        } catch (error) {
+            console.error('Error loading data:', error);
+        } finally {
+            NProgress.done();
+        }
     }
+    
     function initStats() {
-
         stats = new Stats();
         // Align top-left
         stats.domElement.style.position = 'absolute';
@@ -147,6 +165,7 @@ function init() {
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = false;
         renderer.autoClear = false;
+        renderer.setAnimationLoop( animate );
 
         gpuPanel = new GPUStatsPanel( renderer.getContext() );
         stats.addPanel( gpuPanel );
@@ -155,8 +174,7 @@ function init() {
     function initScene() {
         scene = new THREE.Scene();
         scene.background = new THREE.Color( '#474747' );
-        scene.fog = new THREE.FogExp2( '#8d8d8d', 0.0006 );
-
+        // scene.fog = new THREE.FogExp2( '#8d8d8d', 0.0006 );
         scene_lut = new THREE.Scene();
     }
     function initCamera() {
@@ -183,9 +201,9 @@ function init() {
     }
     function initModel() {
         scene.add(  new THREE.AxesHelper( 10 ) );
-        update_extruded_model();
-        update_merged_model( 0 );
-        update_wireframe();
+        initExtrudedModel();
+        initMergedModel( 0 );
+        initWireframe();
         node = quadTree( map, building, treeIteration );
     }
     function initLut(){
@@ -213,12 +231,15 @@ function init() {
         outlinePass.hiddenEdgeColor.set( '#190a05' );
         composer.addPass( outlinePass );
 
+        let outputPass = new OutputPass();
+        composer.addPass( outputPass );
+
         effectFXAA = new ShaderPass( FXAAShader );
         effectFXAA.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
         composer.addPass( effectFXAA );
     }
     function initControls() {
-        orbitControls = new MapControls(camera, renderer.domElement);
+        orbitControls = new OrbitControls(camera, renderer.domElement);
         orbitControls.maxPolarAngle = 0.65 * Math.PI / 2;
         orbitControls.minPolarAngle = 0.1 * Math.PI / 2;
         orbitControls.target.set( 0, 0, 0 );
@@ -242,44 +263,35 @@ function init() {
     function initGui() {
         gui = new GUI( { width: 300 } );
 
-        let folder = gui.addFolder( "General Options" )
-        folder.add( state, "extruded_model" );
-        folder.__controllers[ 0 ].name( "ExtrudedModel" );
-        folder.add( state, "wireframe" );
-        folder.__controllers[ 1 ].name( "Wireframe" );
-        folder.add( state, "road" );
-        folder.__controllers[ 2 ].name( "Road" );
-        folder.addColor( state, "Road_color" ).onChange(function (){road.material.color.set(state.Road_color)})
-        folder.addColor( state, "Bound_color" ).onChange(function (){bound.material.color.set(state.Bound_color)})
-        folder.open();
+        let generalOptions = gui.addFolder("General Options");
+        generalOptions.add(state, "extruded_model").name("ExtrudedModel");
+        generalOptions.add(state, "wireframe").name("Wireframe");
+        generalOptions.add(state, "road").name("Road");
+        generalOptions.addColor(state, "Road_color").name("Road Color").onChange(() => road.material.color.set(state.Road_color));
+        generalOptions.addColor(state, "Bound_color").name("Bound Color").onChange(() => bound.material.color.set(state.Bound_color));
+        generalOptions.open();
 
-        let folder3 = gui.addFolder( "Performance Options" );
-        folder3.add( state, "extruded_model_num", 0, map.buildings.number ).step(1.0);
-        folder3.__controllers[ 0 ].name( `ExtrudedModel Number (<${map.buildings.number})` );
-        folder3.add( state, 'Sight_Distance', 100, 1000 ).step(5);
-        folder3.open();
+        let performanceOptions = gui.addFolder("Performance Options");
+        performanceOptions.add(state, "extruded_model_num", 0, map.buildings.number).step(1.0).name(`ExtrudedModel Number (<${map.buildings.number})`);
+        performanceOptions.add(state, 'Sight_Distance', 100, 1000).step(5).name("Sight Distance");
+        performanceOptions.open();
 
-        let folder4 = gui.addFolder( "Seismic Response Options" );
-        folder4.add( state, "eq_select", 0, 499 ).step(1.0); // .onChange( function () { updateEqTable() } )
-        folder4.add( state, 'IDR_type', ['maximum', 'residual'] );
-        // folder4.add( state, 'eq_animation', Object.keys( his_list ) ); //.onChange( function () { updateEqTable() } );
-        folder4.add( state, 'eq_animation', Object.keys( his_list ) ).onChange( function () { update_IDR() } );
-        folder4.add( state, 'Update_response' );
-        folder4.open();
+        let seismicOptions = gui.addFolder("Seismic Response Options");
+        seismicOptions.add(state, "eq_select", 0, 499).step(1.0).name("Select Earthquake");
+        seismicOptions.add(state, 'IDR_type', ['maximum', 'residual']).name("IDR Type");
+        seismicOptions.add(state, 'eq_animation', Object.keys(his_list)).name("EQ Animation").onChange(() => update_IDR());
+        seismicOptions.add(state, 'Update_response').name("Update Response");
+        seismicOptions.open();
     }
     function onWindowResize() {
-
         let width = window.innerWidth;
         let height = window.innerHeight;
 
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
-
         renderer.setSize( width, height );
         composer.setSize( window.innerWidth, window.innerHeight );
-
         effectFXAA.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
-
     }
 
     function onDocumentMouseMove( event ) {
@@ -298,11 +310,9 @@ function init() {
     }
 
     function checkIntersection() {
-
         raycaster.setFromCamera( mouse, camera );
         let intersects = raycaster.intersectObjects( scene.children );
         if ( intersects.length > 0 ) {
-
             nearestObject = getNearestObject(intersects);
 
             if ( (selectedObject !== nearestObject) && (nearestObject.type !== 'LineSegments') ) {
@@ -314,7 +324,6 @@ function init() {
 
                 selectedObject.visible = true;
             }
-
         } else {
             if ( selectedObject ) {
                 selectedObject.visible = false;
@@ -326,110 +335,86 @@ function init() {
 
 }
 function animate() {
-
     stats.update();
-    orbitControls.update();
-    requestAnimationFrame( animate );
+    // orbitControls.update();
+    // requestAnimationFrame( animate );
     render();
 
     function render() {
-
-        zoom = Math.ceil(camera.position.y / 50);
-        updateParentPage();
-
-        let fru = computeFrustumFromCamera(camera);
-        let renderList = getRenderList(fru, node, treeIteration);
-        let renderNum = Math.min(state.extruded_model_num, renderList.length);
-
-        if (state.extruded_model) {
-            if (parent.vm.switch_anim) {
-                times.update(sample_rate, parent.vm.ani_paused, parent.vm.slider_vel);
-                let time_step_int = Math.ceil(times.current_step);
-                parent.vm.time_step = time_step_int / sample_rate;
-
-                for (let i = 0; i < renderNum; i++) {
-
-                    let ib = renderList[i];
-                    if (zoom < 12 && object_in_sight(building[ib], camera)) {
-                        scene.add(building[ib]);
-                        building[ib].visible = true;
-
-                        if (time_step_int < building[ib].userData.his.length && building[ib].userData.his.length > 1) {
-                            let pN = map.buildings.bounds[ib].length;
-
-                            building[ib].geometry.attributes.position.needsUpdate = true;
-                            building[ib].geometry.attributes.color.needsUpdate = true;
-
-                            for (let i = 0; i < floor[ib] + 1; i++) {
-                                let inter = i / floor[ib];
-                                if (parent.vm.switch_dis) {
-                                    displace = building[ib].userData.his[time_step_int] * parent.vm.slider_amp * inter / max_IDR_his / 2;//Math.max(...max_IDR)
-                                    for (let n = 0; n < pN; n++) {
-                                        building[ib].geometry.attributes.position.array[(i * pN + n) * 3] = map.buildings.bounds[ib][n][0] + displace;
-                                    }
-                                }
-                                if (parent.vm.switch_col) {
-                                    let occlusion = (floor[ib] - i) / floor[ib] * 0.2;
-                                    interpolation = Math.abs(building[ib].userData.his[time_step_int]) / max_IDR_his * 0.6 + 0.2;//Math.max(...max_IDR)
-                                    for (let n = 0; n < pN; n++) {
-                                        building[ib].geometry.attributes.color.array[(i * pN + n) * 3] = interpolation * 2.0 - occlusion;
-                                        building[ib].geometry.attributes.color.array[(i * pN + n) * 3 + 1] = 1 - interpolation * 2.0 - occlusion;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                scene.add(building_merge);
-                for (let i = 0; i < renderNum; i++) {
-                    let ib = renderList[i];
-                    if (zoom < 6 && object_in_sight(building[ib], camera)) scene.add(building[ib]);
-                }
-            }
-        }
-        if (state.wireframe) scene.add(wf_merge);
-        if (state.road) scene.add(road);
-
-        // console.log(renderer.info);
         gpuPanel.startQuery();
-
+        updateParentPage();
+        updateScene();
         renderer.clear();
-        if (parent.vm.switch_interact) composer.render();
+        if (parent.vm.switch_interact) {
+            composer.render();
+            renderer.render( scene_lut, camera_lut );
+        }
         else {
             renderer.render( scene, camera );
             renderer.render( scene_lut, camera_lut );
+            // console.log(renderer.info);
         }
+        onAfterRender();
+        gpuPanel.endQuery();
 
-        // onAfterRender
-        for (let c = 0; c < scene.children.length; c++){
-            let child = scene.children[c];
-            if ( (child.isMesh === true)&&(child.layers.mask===3) ) {
-                scene.remove(child);
-                child.visible = false;
-
-                if (state.color_animated && times.current_step > child.userData.his.length){
-
-                    for (let i = 0; i < floor[child.userData.bid]+1; i++) {
-                        let tmp = (i / floor[child.userData.bid] - 1) * 0.03;
-                        let pN = map.buildings.bounds[child.userData.bid].length;
-                        for (let n = 0; n < pN; n++) {
-                            child.geometry.attributes.color.array[(i * pN + n) * 3] = 0.18 + tmp;
-                            child.geometry.attributes.color.array[(i * pN + n) * 3 + 1] = 0.18 + tmp;
-                            child.geometry.attributes.color.array[(i * pN + n) * 3 + 2] = 0.2 + tmp;
+        function onAfterRender(){
+            for (let c = 0; c < scene.children.length; c++){
+                let child = scene.children[c];
+                if ( (child.isMesh === true)&&(child.layers.mask===3) ) {
+                    scene.remove(child);
+                    child.visible = false;
+    
+                    if (state.color_animated && times.current_step > child.userData.parent.his.length){
+                        if (child.userData.parent.level == 1) {
+                            for (let i = 0; i < child.userData.parent.floor+1; i++) {
+                                let tmp = (i / child.userData.parent.floor - 1) * 0.03;
+                                let pointCount = map.buildings.bounds[child.userData.parent.ib].length;
+                                for (let n = 0; n < pointCount; n++) {
+                                    child.geometry.attributes.color.array[(i * pointCount + n) * 3] = 0.18 + tmp;
+                                    child.geometry.attributes.color.array[(i * pointCount + n) * 3 + 1] = 0.18 + tmp;
+                                    child.geometry.attributes.color.array[(i * pointCount + n) * 3 + 2] = 0.2 + tmp;
+                                }
+                            }
+                        } else {
+                            for (let n = 0; n < pointCount; n++) {
+                                child.geometry.attributes.color.array[n * 3] = 0.18;
+                                child.geometry.attributes.color.array[n * 3 + 1] = 0.18;
+                                child.geometry.attributes.color.array[n * 3 + 2] = 0.2;
+                            }
                         }
+                        
+                        child.geometry.attributes.color.needsUpdate = true;
                     }
-                    child.geometry.attributes.color.needsUpdate = true;
                 }
             }
         }
-
-        gpuPanel.endQuery();
+        function updateScene() {
+            let fru = computeFrustumFromCamera(camera);
+            let renderList = getRenderList(fru, node, treeIteration);
+            let renderNum = Math.min(state.extruded_model_num, renderList.length);
+            if (state.extruded_model)   updateModels(renderNum, renderList);
+            if (state.wireframe)        scene.add(wf_merge);
+            if (state.road)             scene.add(road);
+        }
+        function updateModels(renderNum, renderList) {
+            if (parent.vm.switch_anim) {
+                times.update(sample_rate, parent.vm.ani_paused, parent.vm.slider_vel);
+                let timeStep = Math.ceil(times.current_step);
+                parent.vm.time_step = timeStep / sample_rate;
+                
+                updateExtrudedModelsAnimated(
+                    building, renderNum, renderList, timeStep, maxIDRHis, parent.vm, camera, scene, state.Sight_Distance
+                )
+            } else {
+                updateExtrudedModelsStatic(
+                    building, building_merge, renderNum, renderList, camera, scene, state.Sight_Distance
+                )
+            }
+        }
     }
 }
 
-function reset_camera() {
-
+function resetCamera() {
     let direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
 
@@ -439,7 +424,7 @@ function reset_camera() {
     orbitControls.update();
 
 }
-function reset_animation() {
+function resetAnimation() {
     times.last_step = 0;
 }
 function computeFrustumFromCamera(camera) {
@@ -447,33 +432,42 @@ function computeFrustumFromCamera(camera) {
     frustum.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     return frustum;
 }
-function object_in_sight(object, camera) {
-    let x2 = Math.pow(object.geometry.attributes.position.array[0] - camera.position.x, 2);
-    let z2 = Math.pow(object.geometry.attributes.position.array[2] - camera.position.z, 2);
-    return ( x2 + z2 < Math.pow( state.Sight_Distance / 2, 2 ) )
-}
 
 async function setBuildingData() {
     if (selectedObject) {
         let geo = selectedObject.geometry;
-        let file = "./request/bid_" + selectedObject.userData.bid.toString() + ".json";
+        let file = "./request/bid_" + selectedObject.userData.parent.ib.toString() + ".json";
         parent.loadTableData(file);
-        parent.table_attr.structure.attributes.bid.value = selectedObject.userData.bid;
-        parent.table_attr.structure.attributes.height.value = selectedObject.userData.height;
-        parent.table_attr.structure.attributes.floor.value = selectedObject.userData.floor;
+        parent.table_attr.structure.attributes.bid.value = selectedObject.userData.parent.ib;
+        parent.table_attr.structure.attributes.height.value = selectedObject.userData.parent.height;
+        parent.table_attr.structure.attributes.floor.value = selectedObject.userData.parent.floor;
         parent.table_attr.structure.attributes.coordinate.value = "(" + geo.boundingSphere.center.x.toFixed(1).toString() + ", " + geo.boundingSphere.center.z.toFixed(1).toString() + ")";
         parent.table_attr.structure.attributes.boundSp.value = geo.boundingSphere.radius.toFixed(2);
         parent.table_attr.structure.attributes.triangles.value = geo.attributes.position.count;
     }
 }
-function jsonLoader( filename, path ) {
-    let url = path + filename;
-    let jsonRequest = new XMLHttpRequest();
-    jsonRequest.open( "GET", url, false );
-    jsonRequest.send( null );
-    // console.log( jsonRequest )
-    return JSON.parse( jsonRequest.response )
-}
+
+function jsonLoader(filename, path) {
+    return new Promise((resolve, reject) => {
+      let url = path + filename;
+      let jsonRequest = new XMLHttpRequest();
+      jsonRequest.open("GET", url, true);
+  
+      jsonRequest.onload = function () {
+        if (jsonRequest.status >= 200 && jsonRequest.status < 300) {
+          resolve(JSON.parse(jsonRequest.responseText));
+        } else {
+          reject(new Error(`Failed to load ${url}: ${jsonRequest.statusText}`));
+        }
+      };
+  
+      jsonRequest.onerror = function () {
+        reject(new Error(`Network error while fetching ${url}`));
+      };
+  
+      jsonRequest.send(null);
+    });
+  }
 function updateEqTable(){
     let n = Math.round( state.eq_select );
 
@@ -483,15 +477,15 @@ function updateEqTable(){
     parent.table_attr.earthquake.attributes.duration.value = 120.0;
     parent.table_attr.earthquake.attributes.cav.value = '-';
 }
-function update_merged_model( eid ) {
-    building_merge = BLOCKBuilding_merge( map, dcj, eid, state.IDR_type );
+function initMergedModel( eid ) {
+    building_merge = BlockBuildingMerge( map, dcj, eid, state.IDR_type );
     scene.add(building_merge);
     building_merge.layers.enable( 2 );
     building_merge.frustumCulled = false;
     building_merge.onAfterRender = function () { scene.remove(building_merge) }
 }
-function update_wireframe(){
-    wf_merge = BLOCKBuilding_wireframe( building_merge );
+function initWireframe(){
+    wf_merge = BlockBuildingWireframe( building_merge );
     scene.add(wf_merge);
     wf_merge.layers.enable( 2 );
     wf_merge.layers.frustumCulled = false;
@@ -499,35 +493,20 @@ function update_wireframe(){
         scene.remove(wf_merge);
     }
 }
-function update_extruded_model(){
-    floor = [];
+function initExtrudedModel(){
     building = [];
-    obj = [];
-
     for (let ib = 0; ib < map.buildings.number; ib++) {
-
         let floor_height = 3.0
-        floor[ib] = Math.max(Math.floor( map.buildings.height[ib] / floor_height ), 1);
-
-        building[ib] = BLOCKBuilding( map, ib, floor_height, floor[ib] );
-        building[ib].userData = {
-            bid: ib,
-            height: map.buildings.height[ib],
-            floor: Math.max(Math.floor(map.buildings.height[ib] / 3.0), 1),
-            his: dcj_his.dcj_his[ib]
-        };
-
-        scene.add(building[ib]);
-
-        building[ib].layers.enable( 1 );
-        building[ib].frustumCulled = false;
+        building[ib] = new BlockBuilding(map, ib, floor_height);
+        building[ib].his = dcj_his.dcj_his[ib];
+        scene.add(building[ib].getMesh(1));
     }
 }
 function update_IDR(){
     // maximum inter-story drift ratio
     // let file = rsp_list[state.eq_select];
     // dcj_8219 = jsonLoader(file, './');
-    update_merged_model( state.eq_select );
+    initMergedModel( state.eq_select );
 
     let file2 = his_list[state.eq_animation];
     dcj_his = jsonLoader(file2, './data/PuTuo/');
@@ -536,18 +515,21 @@ function update_IDR(){
     max_time_step = dcj_his.length;
     parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
     for (let ib = 0; ib < map.buildings.number; ib++) {
-        building[ib].userData.his = dcj_his.dcj_his[ib]
+        // building[ib].getMesh().userData.his = dcj_his.dcj_his[ib]
+        // building[ib].getMesh(0).userData.his = dcj_his.dcj_his[ib]
+        building[ib].his = dcj_his.dcj_his[ib]
+        building[ib].his = dcj_his.dcj_his[ib]
     }
 }
 function updateParentPage(){
     parent.vm.camera_x = camera.position.x.toFixed(1);
     parent.vm.camera_y = camera.position.z.toFixed(1);
     if (parent.cameraControls.isReset === 1){
-        reset_camera();
+        resetCamera();
         parent.cameraControls.isReset = 0;
     }
     if (parent.timeControls.isReset === 1){
-        reset_animation();
+        resetAnimation();
         parent.timeControls.isReset = 0;
     }
     if (parent.table_attr.earthquake.needsUpdate === 1){

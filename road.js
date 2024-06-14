@@ -1,5 +1,7 @@
-import { Line2 } from './three.js_130/examples/jsm/lines/Line2.js';
-import { LineMaterial } from './three.js_130/examples/jsm/lines/LineMaterial.js';
+// import { Line2 } from './three.js_130/examples/jsm/lines/Line2.js';
+// import { LineMaterial } from './three.js_130/examples/jsm/lines/LineMaterial.js';
+import { Line2 } from './modules/three-r165/examples/jsm/lines/Line2.js';
+import { LineMaterial } from './modules/three-r165/examples/jsm/lines/LineMaterial.js';
 import { LineGeometry } from './LineGeometry.js';
 
 export function Road_LineSegments( pos, color ) {
@@ -10,7 +12,7 @@ export function Road_LineSegments( pos, color ) {
 
     let road_material = new LineMaterial( {
         color: color,
-        linewidth: 0.0015,//0.0008
+        linewidth: 1.5,
         dashed: false,
         alphaToCoverage: true,
     } );
