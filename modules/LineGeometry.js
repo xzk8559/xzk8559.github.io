@@ -1,5 +1,4 @@
-// import { LineSegmentsGeometry } from './three.js_130/examples/jsm/lines/LineSegmentsGeometry.js';
-import { LineSegmentsGeometry } from './modules/three-r165/examples/jsm/lines/LineSegmentsGeometry.js';
+import { LineSegmentsGeometry } from './three-r165/examples/jsm/lines/LineSegmentsGeometry.js';
 
 class LineGeometry extends LineSegmentsGeometry {
 
