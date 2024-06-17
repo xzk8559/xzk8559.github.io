@@ -12,6 +12,8 @@ import {ShaderPass}       from './modules/three-r165/examples/jsm/postprocessing
 import {OutlinePass}      from './modules/three-r165/examples/jsm/postprocessing/OutlinePass.js';
 import {OutputPass}       from './modules/three-r165/examples/jsm/postprocessing/OutputPass.js';
 import {EffectComposer}   from './modules/three-r165/examples/jsm/postprocessing/EffectComposer.js';
+
+import { Sky } from './modules/three-r165/examples/jsm/objects/Sky.js';
 // ------------------------------------------------------custom---------------------------------------------------------
 import { Lut }                      from './modules/Lut.js';
 import { quadTree }                 from './modules/Quadtree.js';
@@ -58,6 +60,7 @@ let dcj, dcj_his, eq_his, max_IDR, maxIDRHis; // earthquake & response
 let lut, sprite, scene_lut, camera_lut;
 let road, road_pos, bound, bound_pos;
 let composer, outlinePass, effectFXAA;
+let sky, sun
 
 // let his_list = {
 //     main_field: 'maxIDR_history_MainShock_field1.json',
@@ -88,7 +91,15 @@ let state = {
     eq_animation : 'main_field2',
     road : true,
     Road_color : '#292c2f',
-    Bound_color : '#e36c11'
+    Bound_color : '#e36c11',
+    // sky
+    turbidity: 5,
+    rayleigh: 3,
+    mieCoefficient: 0.005,
+    mieDirectionalG: 0.7,
+    elevation: 2,
+    azimuth: 0,
+    exposure: null
 };
 
 let times = new TimeController();
@@ -176,6 +187,14 @@ async function init() {
         scene.background = new THREE.Color( '#474747' );
         // scene.fog = new THREE.FogExp2( '#8d8d8d', 0.0006 );
         scene_lut = new THREE.Scene();
+
+        sky = new Sky();
+        sky.scale.setScalar( 450000 );
+        sun = new THREE.Vector3();
+        scene.add( sky );
+
+        state.exposure = renderer.toneMappingExposure;
+        skyChanged();
     }
     function initCamera() {
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1800);
@@ -240,12 +259,13 @@ async function init() {
     }
     function initControls() {
         orbitControls = new OrbitControls(camera, renderer.domElement);
-        orbitControls.maxPolarAngle = 0.65 * Math.PI / 2;
-        orbitControls.minPolarAngle = 0.1 * Math.PI / 2;
+        orbitControls.maxPolarAngle = 0.95 * Math.PI / 2;
+        // orbitControls.maxPolarAngle = 0.65 * Math.PI / 2;
+        // orbitControls.minPolarAngle = 0.1 * Math.PI / 2;
         orbitControls.target.set( 0, 0, 0 );
         //orbitControls.addEventListener( 'change', render ); // 使用animate方法时删除
 
-        orbitControls.enableDamping = false;
+        orbitControls.enableDamping = true;
         orbitControls.dampingFactor = 0.3;
         orbitControls.enableZoom = true;
         orbitControls.maxDistance = 1000;
@@ -258,7 +278,7 @@ async function init() {
         };
 
         orbitControls.update();
-        orbitControls.saveState ();
+        orbitControls.saveState();
     }
     function initGui() {
         gui = new GUI( { width: 300 } );
@@ -282,6 +302,15 @@ async function init() {
         seismicOptions.add(state, 'eq_animation', Object.keys(his_list)).name("EQ Animation").onChange(() => update_IDR());
         seismicOptions.add(state, 'Update_response').name("Update Response");
         seismicOptions.open();
+        
+        let skyOptions = gui.addFolder("Sky Options");
+        skyOptions.add( state, 'turbidity', 0.0, 20.0, 0.1 ).onChange( skyChanged );
+        skyOptions.add( state, 'rayleigh', 0.0, 4, 0.001 ).onChange( skyChanged );
+        skyOptions.add( state, 'mieCoefficient', 0.0, 0.1, 0.001 ).onChange( skyChanged );
+        skyOptions.add( state, 'mieDirectionalG', 0.0, 1, 0.001 ).onChange( skyChanged );
+        skyOptions.add( state, 'elevation', 0, 90, 0.1 ).onChange( skyChanged );
+        skyOptions.add( state, 'azimuth', - 180, 180, 0.1 ).onChange( skyChanged );
+        skyOptions.add( state, 'exposure', 0, 1, 0.0001 ).onChange( skyChanged );
     }
     function onWindowResize() {
         let width = window.innerWidth;
@@ -336,7 +365,7 @@ async function init() {
 }
 function animate() {
     stats.update();
-    // orbitControls.update();
+    orbitControls.update();
     // requestAnimationFrame( animate );
     render();
 
@@ -536,4 +565,24 @@ function updateParentPage(){
         updateEqTable();
         parent.table_attr.earthquake.needsUpdate = 0;
     }
+}
+
+function skyChanged() {
+
+    const uniforms = sky.material.uniforms;
+    uniforms[ 'turbidity' ].value = state.turbidity;
+    uniforms[ 'rayleigh' ].value = state.rayleigh;
+    uniforms[ 'mieCoefficient' ].value = state.mieCoefficient;
+    uniforms[ 'mieDirectionalG' ].value = state.mieDirectionalG;
+
+    const phi = THREE.MathUtils.degToRad( 90 - state.elevation );
+    const theta = THREE.MathUtils.degToRad( state.azimuth );
+
+    sun.setFromSphericalCoords( 1, phi, theta );
+
+    uniforms[ 'sunPosition' ].value.copy( sun );
+
+    renderer.toneMappingExposure = state.exposure;
+    // renderer.render( scene, camera );
+
 }
