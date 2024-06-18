@@ -3,7 +3,7 @@ import * as THREE from '../modules/three-r165/build/three.module.js';
 export function initPlane(scene) {
     // console.log(scene);
     let planeGeometry = new THREE.BoxGeometry( 1200, 1000, 10 ); 
-    let planeMaterial = new THREE.MeshLambertMaterial({color: '#0F0F05'});
+    let planeMaterial = new THREE.MeshLambertMaterial({color: '#212121'});
     let plane = new THREE.Mesh( planeGeometry, planeMaterial );
     plane.rotation.x = -0.5 * Math.PI;
     plane.position.set( 600, -5, 450);

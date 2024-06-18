@@ -14,7 +14,7 @@ export function Bound_LineSegments( pos, color ) {
 
     let bound_material = new LineMaterial( {
         color: color,
-        linewidth: 3,
+        linewidth: 6,
         dashed: false,
         alphaToCoverage: true,
     } );

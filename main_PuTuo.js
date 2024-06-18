@@ -91,7 +91,7 @@ let state = {
     eq_animation : 'main_field2',
     road : true,
     Road_color : '#292c2f',
-    Bound_color : '#e36c11',
+    Bound_color : '#141414', // orange:'#e36c11',
     // sky
     turbidity: 5,
     rayleigh: 3,
