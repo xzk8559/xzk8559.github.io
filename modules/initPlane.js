@@ -10,7 +10,6 @@ export function initPlane(scene) {
     plane.layers.set( 0 );
     scene.add(plane);
     plane.renderOrder = 1;
-
     
     let planeGeometry2 = new THREE.BoxGeometry( 1200, 1000, 20 ); 
     let planeMaterial2 = new THREE.MeshLambertMaterial({color: '#3C3C3C'});

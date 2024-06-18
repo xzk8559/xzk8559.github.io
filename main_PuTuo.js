@@ -198,7 +198,7 @@ async function init() {
     }
     function initCamera() {
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1800);
-        camera.position.set( 20, 600, 20 );
+        camera.position.set( 1600, 200, 800 );
         camera.layers.enable( 0 ); // enabled by default
         camera.layers.enable( 1 );
         camera.layers.enable( 2 );
