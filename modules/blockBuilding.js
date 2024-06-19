@@ -90,7 +90,7 @@ export class BlockBuilding {
         let mesh = new THREE.Mesh(geometry, material);
         mesh.layers.enable( 1 );
         mesh.frustumCulled = false;
-        console.log(mesh);
+        // console.log(mesh);
         
         let mesh2 = new THREE.Mesh(geometry2, material);
         mesh2.layers.enable( 1 );

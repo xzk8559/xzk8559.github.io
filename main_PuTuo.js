@@ -81,7 +81,7 @@ let his_list = {
 let state = {
     animated : false,
     extruded_model : true,
-    wireframe : true,
+    wireframe : false,
     extruded_model_num : 10000,
     color_animated : false,
     displacement_animated : false,
@@ -608,6 +608,8 @@ function initLabel() {
         const div = document.createElement('div');
         div.textContent = 'Building' + ib.toString();
         div.style.backgroundColor = 'transparent';
+        div.style.textShadow = '0px 0px 6px black';
+        div.style.fontSize = '16px';
 
         labels[ib] = new CSS2DObject( div );
         const pos = building[ib].getMesh(1).geometry.boundingSphere.center;
