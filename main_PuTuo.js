@@ -14,11 +14,13 @@ import {OutputPass}       from './modules/three-r165/examples/jsm/postprocessing
 import {EffectComposer}   from './modules/three-r165/examples/jsm/postprocessing/EffectComposer.js';
 
 import { Sky } from './modules/three-r165/examples/jsm/objects/Sky.js';
+import { CSS2DRenderer, CSS2DObject } from './modules/three-r165/examples/jsm/renderers/CSS2DRenderer.js';
 // ------------------------------------------------------custom---------------------------------------------------------
 import { Lut }                      from './modules/Lut.js';
 import { quadTree }                 from './modules/Quadtree.js';
 import { Road_LineSegments }        from './modules/road.js';
 import { Bound_LineSegments }       from './modules/boundary.js';
+import { boundaryMesh }             from './modules/boundary.js';
 import { TimeController }           from './modules/TimeController.js';
 import { getRenderList }            from './modules/getRenderList_v2.js';
 
@@ -58,9 +60,10 @@ let treeIteration = 6;
 
 let dcj, dcj_his, eq_his, max_IDR, maxIDRHis; // earthquake & response
 let lut, sprite, scene_lut, camera_lut;
-let road, road_pos, bound, bound_pos;
+let road, road_pos, bound, boundMesh, bound_pos;
 let composer, outlinePass, effectFXAA;
-let sky, sun
+let sky, sun;
+let labels, labelRenderer;
 
 // let his_list = {
 //     main_field: 'maxIDR_history_MainShock_field1.json',
@@ -79,7 +82,7 @@ let state = {
     animated : false,
     extruded_model : true,
     wireframe : true,
-    extruded_model_num : 1000,
+    extruded_model_num : 10000,
     color_animated : false,
     displacement_animated : false,
     Amplitude : 1.0,
@@ -122,6 +125,7 @@ async function init() {
     initLight( scene );
     initRoad();
     initModel();
+    initLabel();
     iniPostprocess()
     initLut();
     initControls();
@@ -130,7 +134,7 @@ async function init() {
     window.addEventListener( 'resize', onWindowResize, false );
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     document.getElementById("WebGL-output").appendChild( renderer.domElement );
-    document.getElementById("WebGL-output").addEventListener( "dblclick", setBuildingData );
+    document.getElementById("Label-output").addEventListener( "dblclick", setBuildingData );
     async function initData() {
         NProgress.start();
         try {
@@ -177,6 +181,13 @@ async function init() {
         renderer.shadowMap.enabled = false;
         renderer.autoClear = false;
         renderer.setAnimationLoop( animate );
+        
+        labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize( window.innerWidth, window.innerHeight );
+        labelRenderer.domElement.id = 'Label-output';
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        document.body.appendChild( labelRenderer.domElement );
 
         gpuPanel = new GPUStatsPanel( renderer.getContext() );
         stats.addPanel( gpuPanel );
@@ -197,8 +208,8 @@ async function init() {
         skyChanged();
     }
     function initCamera() {
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1800);
-        camera.position.set( 1600, 200, 800 );
+        camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1800);
+        camera.position.set( 600, 600, 150 );
         camera.layers.enable( 0 ); // enabled by default
         camera.layers.enable( 1 );
         camera.layers.enable( 2 );
@@ -217,6 +228,9 @@ async function init() {
 
         bound = Bound_LineSegments( bound_pos[0], state.Bound_color );
         scene.add( bound );
+
+        // boundMesh = boundaryMesh( bound_pos[0], state.Bound_color );
+        // scene.add( boundMesh );
     }
     function initModel() {
         scene.add(  new THREE.AxesHelper( 10 ) );
@@ -258,14 +272,12 @@ async function init() {
         composer.addPass( effectFXAA );
     }
     function initControls() {
-        orbitControls = new OrbitControls(camera, renderer.domElement);
+        orbitControls = new OrbitControls(camera, labelRenderer.domElement);
         orbitControls.maxPolarAngle = 0.95 * Math.PI / 2;
-        // orbitControls.maxPolarAngle = 0.65 * Math.PI / 2;
-        // orbitControls.minPolarAngle = 0.1 * Math.PI / 2;
-        orbitControls.target.set( 0, 0, 0 );
-        //orbitControls.addEventListener( 'change', render ); // 使用animate方法时删除
+        orbitControls.minPolarAngle = 0.10 * Math.PI / 2;
+        orbitControls.target.set( 600, 0, 300 );
 
-        orbitControls.enableDamping = true;
+        orbitControls.enableDamping = false;
         orbitControls.dampingFactor = 0.3;
         orbitControls.enableZoom = true;
         orbitControls.maxDistance = 1000;
@@ -319,6 +331,7 @@ async function init() {
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         renderer.setSize( width, height );
+        labelRenderer.setSize( width, height );
         composer.setSize( window.innerWidth, window.innerHeight );
         effectFXAA.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
     }
@@ -352,6 +365,7 @@ async function init() {
                 outlinePass.selectedObjects = [selectedObject];
 
                 selectedObject.visible = true;
+                selectedObject.add( labels[selectedObject.userData.parent.ib] );
             }
         } else {
             if ( selectedObject ) {
@@ -383,6 +397,7 @@ function animate() {
             renderer.render( scene_lut, camera_lut );
             // console.log(renderer.info);
         }
+        labelRenderer.render( scene, camera );
         onAfterRender();
         gpuPanel.endQuery();
 
@@ -392,6 +407,7 @@ function animate() {
                 if ( (child.isMesh === true)&&(child.layers.mask===3) ) {
                     scene.remove(child);
                     child.visible = false;
+                    child.remove(labels[child.userData.parent.ib]);
     
                     if (state.color_animated && times.current_step > child.userData.parent.his.length){
                         if (child.userData.parent.level == 1) {
@@ -432,11 +448,11 @@ function animate() {
                 parent.vm.time_step = timeStep / sample_rate;
                 
                 updateExtrudedModelsAnimated(
-                    building, renderNum, renderList, timeStep, maxIDRHis, parent.vm, camera, scene, state.Sight_Distance
+                    building, labels, renderNum, renderList, timeStep, maxIDRHis, parent.vm, camera, scene, state.Sight_Distance
                 )
             } else {
                 updateExtrudedModelsStatic(
-                    building, building_merge, renderNum, renderList, camera, scene, state.Sight_Distance
+                    building, labels, building_merge, renderNum, renderList, camera, scene, state.Sight_Distance
                 )
             }
         }
@@ -528,28 +544,30 @@ function initExtrudedModel(){
         let floor_height = 3.0
         building[ib] = new BlockBuilding(map, ib, floor_height);
         building[ib].his = dcj_his.dcj_his[ib];
-        scene.add(building[ib].getMesh(1));
+        // scene.add(building[ib].getMesh(1));
     }
 }
-function update_IDR(){
-    // maximum inter-story drift ratio
-    // let file = rsp_list[state.eq_select];
-    // dcj_8219 = jsonLoader(file, './');
-    initMergedModel( state.eq_select );
+async function update_IDR(){
+    NProgress.start();
+    try {
+        // maximum inter-story drift ratio
+        initMergedModel( state.eq_select );
 
-    let file2 = his_list[state.eq_animation];
-    dcj_his = jsonLoader(file2, './data/PuTuo/');
-    // dcj_his = jsonLoader('IDR_history_MainShock_field_a.json', './data/PuTuo/');
-    // dcj_his.dcj_his = dcj_his.dcj_his.concat(jsonLoader('IDR_history_MainShock_field_b.json', './data/PuTuo/').dcj_his);
-    max_time_step = dcj_his.length;
-    parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
-    for (let ib = 0; ib < map.buildings.number; ib++) {
-        // building[ib].getMesh().userData.his = dcj_his.dcj_his[ib]
-        // building[ib].getMesh(0).userData.his = dcj_his.dcj_his[ib]
-        building[ib].his = dcj_his.dcj_his[ib]
-        building[ib].his = dcj_his.dcj_his[ib]
+        let file2 = his_list[state.eq_animation];
+        dcj_his = jsonLoader(file2, './data/PuTuo/');
+        max_time_step = dcj_his.length;
+        parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
+        for (let ib = 0; ib < map.buildings.number; ib++) {
+            building[ib].his = dcj_his.dcj_his[ib]
+            building[ib].his = dcj_his.dcj_his[ib]
+        }
+    } catch (error) {
+        console.error('Error loading data:', error);
+    } finally {
+        NProgress.done();
     }
 }
+
 function updateParentPage(){
     parent.vm.camera_x = camera.position.x.toFixed(1);
     parent.vm.camera_y = camera.position.z.toFixed(1);
@@ -568,7 +586,6 @@ function updateParentPage(){
 }
 
 function skyChanged() {
-
     const uniforms = sky.material.uniforms;
     uniforms[ 'turbidity' ].value = state.turbidity;
     uniforms[ 'rayleigh' ].value = state.rayleigh;
@@ -583,6 +600,19 @@ function skyChanged() {
     uniforms[ 'sunPosition' ].value.copy( sun );
 
     renderer.toneMappingExposure = state.exposure;
-    // renderer.render( scene, camera );
+}
 
+function initLabel() {
+    labels = [];
+    for (let ib = 0; ib < map.buildings.number; ib++) {
+        const div = document.createElement('div');
+        div.textContent = 'Building' + ib.toString();
+        div.style.backgroundColor = 'transparent';
+
+        labels[ib] = new CSS2DObject( div );
+        const pos = building[ib].getMesh(1).geometry.boundingSphere.center;
+        labels[ib].position.set( pos.x, building[ib].floor * 0.3, pos.z );
+        labels[ib].layers.set( 0 );
+        // labels[ib].center.set( 0.5, 0.5 );
+    }
 }

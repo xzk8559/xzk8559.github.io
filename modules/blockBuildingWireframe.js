@@ -9,7 +9,7 @@ export function BlockBuildingWireframe( building ) {
     let edges = new THREE.EdgesGeometry( geometry );
     let edges2= new LineSegmentsGeometry().setPositions( edges.attributes.position.array );
     let lineMat = new LineMaterial( {
-        color: "#4cabff",
+        color: "#9BAFC8", //"#4cabff",
         linewidth: .5,
         dashed: false,
         alphaToCoverage: true,

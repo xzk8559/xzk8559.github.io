@@ -1,6 +1,7 @@
 import * as THREE from '../modules/three-r165/build/three.module.js';
-import { Earcut } from './Earcut.js';
+// import { Earcut } from './Earcut.js';
 import { mergeGeometries } from '../modules/three-r165/examples/jsm/utils/BufferGeometryUtils.js';
+import { triangulate, exchange0And1 } from './utilsModeling.js';
 
 
 export function BlockBuildingMerge(cityMap, dcj, eid, IDR_type) {
@@ -23,7 +24,6 @@ export function BlockBuildingMerge(cityMap, dcj, eid, IDR_type) {
     else{ IDR = dcj.dcj_res[eid]; max_IDR = dcj.dcj_res_top[eid] }
 
     let bid_list = dcj.bid;
-    // let num_bu = dcj.num_bu;
 
     let floor_heights = cityMap.buildings.height;
     let geometries = [];
@@ -35,30 +35,30 @@ export function BlockBuildingMerge(cityMap, dcj, eid, IDR_type) {
 
         let indices = [],
             vertices = [],
-            normals = [],
             colors = [],
+            // normals = [],
             bounds = cityMap.buildings.bounds[ib],
             pN = bounds.length;
 
-        // rgb = get_RGB ( ib, bid_list, IDR, max_IDR );
         rgb = get_RGB_eqfield( ib, bid_list, IDR, max_IDR );
 
         for (let i0 = 0; i0 < floor + 1; i0++) {
             for (let i1 = 0; i1 < pN; i1++) {
-                let x = bounds[i1][0];
-                let z = bounds[i1][1];
+                const [x, z] = bounds[i1];
                 let y;
+                let colorShift;
                 if (i0 === floor) { 
-                    y = (floor-1) * floor_height * cityMap['coordinate scale'] + .01;
-                    colors.push( rgb[0] + .1, rgb[1] + .1, rgb[2] + .1 );
+                    y = (floor-1) * floor_height * cityMap['coordinate scale'] + 0.01;
+                    colorShift = 0.1;
                 } else {
-                    y = i0 * floor_height * cityMap['coordinate scale']; 
-                    let tmp = Math.min(0, (i0/5 - 1)) * .1 - .075;
-                    tmp += Math.min(0, (i0 - 1)) * .05;
-                    colors.push( rgb[0] + tmp, rgb[1] + tmp, rgb[2] + tmp );
+                    y = i0 * floor_height * cityMap['coordinate scale'];
+                    colorShift = Math.min(0, (i0 / 5 - 1)) * 0.1 + Math.min(0, (i0 - 1)) * 0.05 - 0.075;
                 }
+
+                const [r, g, b] = rgb.map(channel => channel + colorShift);
                 vertices.push(x, y, z);
-                normals.push( 0, 1, 0.5 );
+                colors.push(r, g, b);
+                // normals.push( 0, 1, 0.5 );
             }
 
             if (i0 !== floor){
@@ -75,7 +75,7 @@ export function BlockBuildingMerge(cityMap, dcj, eid, IDR_type) {
         }
 
 
-        let triangles =  Triangulate( bounds );
+        let triangles =  triangulate( bounds );
         for (let i = 0; i <triangles.length; i++) {
             let n = i - i % 3 + exchange0And1( (i%3) );
             indices.push( triangles[n] + pN * floor );
@@ -84,16 +84,16 @@ export function BlockBuildingMerge(cityMap, dcj, eid, IDR_type) {
         let geometry = new THREE.BufferGeometry();
         geometry.setIndex( indices );
         geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
-        geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
         geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-        geometry.computeVertexNormals();
+        // geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
+        // geometry.computeVertexNormals();
 
         geometries.push(geometry)
     }
 
     let mergedGeometry = mergeGeometries( geometries );
 
-    let material = new THREE.MeshLambertMaterial( {vertexColors: true, side: THREE.DoubleSide} );
+    let material = new THREE.MeshBasicMaterial( {vertexColors: true, side: THREE.DoubleSide} );
     material.precision = "lowp";
     material.transparent = false;
     material.opacity = 0.6;
@@ -101,36 +101,8 @@ export function BlockBuildingMerge(cityMap, dcj, eid, IDR_type) {
     return new THREE.Mesh( mergedGeometry, material )
 }
 
-function Triangulate(bounds_vec3) {
-    let array = [];
-    for (let i1 = 0; i1 < bounds_vec3.length; i1++){
-        array.push( bounds_vec3[i1][0], bounds_vec3[i1][1] );
-    }
-    return Earcut.triangulate( array );
-}
-
-function exchange0And1( x ){
-    if ( x === 0 ) return 1;
-    else if ( x === 1 ) return 0;
-    return 2
-    // return ( 3/2 * x * x - 5/2 * x + 1 )
-}
-
 function getRnd(min, max) {
     return Math.random() * (max - min) + min;
-}
-
-function get_RGB( ib, bid_list, IDR, max_IDR ) {
-    let r, g, b
-    // let r = getRnd(0.2, 0.8);
-    let ind = bid_list.indexOf( ib )
-    if ( ind === -1 ) { r = 0.18; g = 0.18; b = 0.2 }
-    else {
-        r = IDR[ind] / max_IDR * 0.6 + 0.2;
-        g = 1 - r;
-        b = 0.4;
-    }
-    return [r, g, b]
 }
 
 function get_RGB_eqfield( ib, bid_list, IDR, max_IDR ) {
@@ -167,7 +139,6 @@ function get_RGB_eqfield( ib, bid_list, IDR, max_IDR ) {
     let v = IDR[ind] / max_IDR;
     for (let i = 0; i < v_list.length-1; i++) {
         if (v <= v_list[i+1]) {
-            // console.log(interp_rgb(c_list[i], c_list[i+1], v_list[i], v_list[i+1], v));
             return interp_rgb(c_list[i], c_list[i+1], v_list[i], v_list[i+1], v);
         }
     }

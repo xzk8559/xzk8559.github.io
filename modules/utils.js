@@ -1,16 +1,17 @@
-export function updateExtrudedModelsStatic(building, building_merge, renderNum, renderList, camera, scene, distance) {
+export function updateExtrudedModelsStatic(building, labels, building_merge, renderNum, renderList, camera, scene, distance) {
     scene.add(building_merge);
     const zoom = Math.ceil(camera.position.y / 50);
     for (let i = 0; i < renderNum; i++) {
         const ib = renderList[i];
         const mesh = building[ib].getMesh();
-        if (zoom < 6 && isObjectInSight(mesh, camera, distance)) {
+        if (zoom < 6 && calculateLevel(mesh, camera, distance)) {
             scene.add(mesh);
+            // mesh.add( labels[ib] );
         }
     }
 }
 
-export function updateExtrudedModelsAnimated(building, renderNum, renderList, timeStep, maxIDRHis, vm, camera, scene, distance) {
+export function updateExtrudedModelsAnimated(building, labels, renderNum, renderList, timeStep, maxIDRHis, vm, camera, scene, distance) {
     // const zoom = Math.ceil(camera.position.y / 50);
     for (let i = 0; i < renderNum; i++) {
         const ib = renderList[i];
@@ -92,7 +93,7 @@ function calculateLevel(object, camera, distance) {
     let z2 = Math.pow(object.geometry.attributes.position.array[2] - camera.position.z, 2);
     let d2 = Math.pow( distance, 2 )
     if ( (x2 + y2 + z2) < d2 ) {
-        if ( (x2 + y2 + z2) < d2/4 ) {
+        if ( (x2 + y2 + z2) < d2/2.25 ) {
             return 1
         }
         return 0

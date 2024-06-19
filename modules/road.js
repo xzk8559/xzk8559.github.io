@@ -20,7 +20,9 @@ export function Road_LineSegments( pos, color ) {
 
     road = new Line2( geometry, road_material );
     road.scale.set( scale, 1, scale );
+    road.position.set( 0, -1.0, 0 );
     road.layers.set( 0 );
+    road.renderOrder = 1;
     // console.log(road)
 
     return road
