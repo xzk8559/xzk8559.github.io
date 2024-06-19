@@ -1,4 +1,4 @@
-export function updateExtrudedModelsStatic(building, labels, building_merge, renderNum, renderList, camera, scene, distance) {
+export function updateExtrudedModelsStatic(building, building_merge, renderNum, renderList, camera, scene, distance) {
     scene.add(building_merge);
     const zoom = Math.ceil(camera.position.y / 50);
     for (let i = 0; i < renderNum; i++) {
@@ -6,12 +6,11 @@ export function updateExtrudedModelsStatic(building, labels, building_merge, ren
         const mesh = building[ib].getMesh();
         if (zoom < 6 && calculateLevel(mesh, camera, distance)) {
             scene.add(mesh);
-            // mesh.add( labels[ib] );
         }
     }
 }
 
-export function updateExtrudedModelsAnimated(building, labels, renderNum, renderList, timeStep, maxIDRHis, vm, camera, scene, distance) {
+export function updateExtrudedModelsAnimated(building, lut, renderNum, renderList, timeStep, maxIDRHis, vm, camera, scene, distance) {
     // const zoom = Math.ceil(camera.position.y / 50);
     for (let i = 0; i < renderNum; i++) {
         const ib = renderList[i];
@@ -23,14 +22,14 @@ export function updateExtrudedModelsAnimated(building, labels, renderNum, render
         if (timeStep < mesh.userData.parent.his.length && mesh.userData.parent.his.length > 1) {
             updateMeshAttributesForAnimation(
                 vm.switch_dis, vm.switch_col, building[ib].level, 
-                mesh, timeStep, vm.slider_amp, maxIDRHis
+                lut, mesh, timeStep, vm.slider_amp, maxIDRHis
             );
         }
         scene.add(mesh);
         mesh.visible = true;
     }
 }
-function updateMeshAttributesForAnimation(dis, col, level, mesh, timeStep, sliderAmp, maxIDRHis) {
+function updateMeshAttributesForAnimation(dis, col, level, lut, mesh, timeStep, sliderAmp, maxIDRHis) {
     mesh.geometry.attributes.position.needsUpdate = true;
     mesh.geometry.attributes.color.needsUpdate = true;
 
@@ -42,14 +41,14 @@ function updateMeshAttributesForAnimation(dis, col, level, mesh, timeStep, slide
                 applyDisplacement(mesh, i, mesh.userData.parent.pointCount, displacement);
             }
             if (col) {
-                const colorInterpolation = calculateColorInterpolation(mesh.userData.parent.his, timeStep, maxIDRHis);
+                const colorInterpolation = calculateColorInterpolation(mesh.userData.parent.his, timeStep, maxIDRHis, lut);
                 applyColorChange(mesh, i, mesh.userData.parent.pointCount, colorInterpolation, interpolationIndex);
     
             }
         }
     } else {
         if (col) {
-            const colorInterpolation = calculateColorInterpolation(mesh.userData.parent.his, timeStep, maxIDRHis);
+            const colorInterpolation = calculateColorInterpolation(mesh.userData.parent.his, timeStep, maxIDRHis, lut);
             applyColorChange(mesh, 0, mesh.userData.parent.pointCount, colorInterpolation, 1);
         }
     }
@@ -67,24 +66,21 @@ function applyDisplacement(mesh, floorIndex, pointCount, displacement) {
     }
 }
 
-function calculateColorInterpolation(history, timeStep, maxIDRHis) {
+function calculateColorInterpolation(history, timeStep, maxIDRHis, lut) {
+    const temp = 8.0;
     const currentHis = history[timeStep];
-    return Math.abs(currentHis) / maxIDRHis * 0.6 + 0.2; //Math.max(...max_IDR)
+    // return lut.getColor( Math.abs(currentHis) / maxIDRHis );
+    return lut.getColor( Math.abs(currentHis) / temp );
 }
 
 function applyColorChange(mesh, floorIndex, pointCount, colorInterpolation, interpolationIndex) {
-    const COLOR_OCCLUSION_FACTOR = 0.2;
+    const COLOR_OCCLUSION_FACTOR = 0.1;
     const occlusion = (1 - interpolationIndex) * COLOR_OCCLUSION_FACTOR;
     for (let n = 0; n < pointCount; n++) {
-        mesh.geometry.attributes.color.array[(floorIndex * pointCount + n) * 3] = colorInterpolation * 2.0 - occlusion;
-        mesh.geometry.attributes.color.array[(floorIndex * pointCount + n) * 3 + 1] = 1 - colorInterpolation * 2.0 - occlusion;
+        mesh.geometry.attributes.color.array[(floorIndex * pointCount + n) * 3] = colorInterpolation.r - occlusion;
+        mesh.geometry.attributes.color.array[(floorIndex * pointCount + n) * 3 + 1] = colorInterpolation.g - occlusion;
+        mesh.geometry.attributes.color.array[(floorIndex * pointCount + n) * 3 + 2] = colorInterpolation.b - occlusion;
     }
-}
-
-function isObjectInSight(object, camera, distance) {
-    let x2 = Math.pow(object.geometry.attributes.position.array[0] - camera.position.x, 2);
-    let z2 = Math.pow(object.geometry.attributes.position.array[2] - camera.position.z, 2);
-    return ( (x2 + z2) < Math.pow( distance / 2, 2 ) )
 }
 
 function calculateLevel(object, camera, distance) {

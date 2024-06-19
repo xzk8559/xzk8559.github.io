@@ -240,7 +240,7 @@ async function init() {
         node = quadTree( map, building, treeIteration );
     }
     function initLut(){
-        lut = new Lut( 'custom', 16 );
+        lut = new Lut( 'custom', 32 );
         sprite = new THREE.Sprite( new THREE.SpriteMaterial( {
             map: new THREE.CanvasTexture( lut.createCanvas() )
         } ) );
@@ -448,11 +448,11 @@ function animate() {
                 parent.vm.time_step = timeStep / sample_rate;
                 
                 updateExtrudedModelsAnimated(
-                    building, labels, renderNum, renderList, timeStep, maxIDRHis, parent.vm, camera, scene, state.Sight_Distance
+                    building, lut, renderNum, renderList, timeStep, maxIDRHis, parent.vm, camera, scene, state.Sight_Distance
                 )
             } else {
                 updateExtrudedModelsStatic(
-                    building, labels, building_merge, renderNum, renderList, camera, scene, state.Sight_Distance
+                    building, building_merge, renderNum, renderList, camera, scene, state.Sight_Distance
                 )
             }
         }
