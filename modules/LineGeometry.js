@@ -9,10 +9,8 @@ class LineGeometry extends LineSegmentsGeometry {
 
 	}
 
-	setPositions( array ) {
+	setPositions( array, x_offset=-2, z_offset=-10 ) {
 		let pos = array;
-		let x_offset = -2;
-		let z_offset = -10;
 
 		let positions = [];
 		for (let i = 0; i < pos.length; i++){
