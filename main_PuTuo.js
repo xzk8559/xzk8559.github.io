@@ -97,7 +97,6 @@ let state = {
     road : true,
     Road_color : '#292c2f',
     Bound_color : '#141414', // orange:'#e36c11',
-    // sky
     sky: !isMobile(),
     turbidity: 5,
     rayleigh: 3,
@@ -146,14 +145,6 @@ async function init() {
     async function initData() {
         NProgress.start();
         try {
-            // const [mapData, dcjData, dcjHisData, eqHisData, roadPosData, boundPosData] = await Promise.all([
-            //     jsonLoader('meta.json', './data/PuTuo/'),
-            //     jsonLoader('IDR_500_8219.json', './data/'),
-            //     jsonLoader('h_mainshock_field.json', './data/PuTuo/'),
-            //     jsonLoader('EQ_history.json', './data/'),
-            //     jsonLoader('road.json', './data/PuTuo/'),
-            //     jsonLoader('boundary.json', './data/PuTuo/')
-            // ]);
             const [mapData, dcjData, eqHisData, roadPosData, boundPosData] = await Promise.all([
                 jsonLoader('meta.json', './data/PuTuo/'),
                 jsonLoader('IDR_500_8219.json', './data/'),
@@ -164,16 +155,12 @@ async function init() {
     
             map = mapData;
             dcj = dcjData;
-            // dcj_his = dcjHisData;
             eq_his = eqHisData.eq_his;
             road_pos = roadPosData.roads;
             bound_pos = boundPosData.boundary;
-            // max_time_step = dcj_his.length;
             max_time_step = eq_his.length;
             max_IDR = dcj.dcj_max_top;
-            // maxIDRHis = dcj_his.dcj_max;
             maxIDRHis = 1;
-            // parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
             parent.vm.max_time_step = Math.ceil(eq_his.length / sample_rate);
         } catch (error) {
             console.error('Error loading data:', error);
@@ -521,36 +508,34 @@ async function setBuildingData() {
     }
 }
 
-function jsonLoader(filename, path) {
-    return new Promise((resolve, reject) => {
-      let url = path + filename;
-      let jsonRequest = new XMLHttpRequest();
-      jsonRequest.open("GET", url, true);
-  
-      jsonRequest.onload = function () {
-        if (jsonRequest.status >= 200 && jsonRequest.status < 300) {
-          resolve(JSON.parse(jsonRequest.responseText));
-        } else {
-          reject(new Error(`Failed to load ${url}: ${jsonRequest.statusText}`));
-        }
-      };
-  
-      jsonRequest.onerror = function () {
-        reject(new Error(`Network error while fetching ${url}`));
-      };
-  
-      jsonRequest.send(null);
-    });
-  }
 function updateEqTable(){
     let n = Math.round( state.eq_select );
-
     parent.vm.eq_his = eq_his[n];
     parent.table_attr.earthquake.attributes.eid.value = 'KiNet-EW-'+ n.toString();
     parent.table_attr.earthquake.attributes.pga.value = 0.4;
     parent.table_attr.earthquake.attributes.duration.value = 120.0;
     parent.table_attr.earthquake.attributes.cav.value = '-';
 }
+
+function loadResHisData() {
+    NProgress.start();
+    let file = "h_mainshock_field.json";
+    // load data
+    jsonLoader(file, './data/PuTuo/').then(data => {
+        dcj_his = data;
+        max_time_step = dcj_his.length;
+        maxIDRHis = dcj_his.dcj_max;
+        parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
+        for (let ib = 0; ib < map.buildings.number; ib++) {
+            building[ib].his = dcj_his.dcj_his[ib];
+        }
+        console.log('Data loaded successfully.');
+    }).catch(error => {
+        console.error('Error loading data:', error);
+    });
+    NProgress.done();
+}
+
 function initMergedModel( eid ) {
     building_merge = BlockBuildingMerge( map, dcj, eid, state.IDR_type );
     scene.add(building_merge);
@@ -572,7 +557,6 @@ function initExtrudedModel(){
     for (let ib = 0; ib < map.buildings.number; ib++) {
         let floor_height = 3.0
         building[ib] = new BlockBuilding(map, ib, floor_height);
-        // building[ib].his = dcj_his.dcj_his[ib];
         // scene.add(building[ib].getMesh(1));
     }
 }
@@ -611,6 +595,10 @@ function updateParentPage(){
     if (parent.table_attr.earthquake.needsUpdate === 1){
         updateEqTable();
         parent.table_attr.earthquake.needsUpdate = 0;
+    }
+    if (parent.table_attr.response.history.needsLoad === 1){
+        loadResHisData();
+        parent.table_attr.response.history.needsLoad = 0;
     }
 }
 
@@ -680,3 +668,25 @@ function isMobile() {
         return navigator.userAgent.match(toMatchItem);
     });
 }
+
+function jsonLoader(filename, path) {
+    return new Promise((resolve, reject) => {
+      let url = path + filename;
+      let jsonRequest = new XMLHttpRequest();
+      jsonRequest.open("GET", url, true);
+  
+      jsonRequest.onload = function () {
+        if (jsonRequest.status >= 200 && jsonRequest.status < 300) {
+          resolve(JSON.parse(jsonRequest.responseText));
+        } else {
+          reject(new Error(`Failed to load ${url}: ${jsonRequest.statusText}`));
+        }
+      };
+  
+      jsonRequest.onerror = function () {
+        reject(new Error(`Network error while fetching ${url}`));
+      };
+  
+      jsonRequest.send(null);
+    });
+  }

@@ -71,6 +71,16 @@
                                 <v-expansion-panel-header class="text-md-subtitle-1">Earthquakes</v-expansion-panel-header>
                                 <v-expansion-panel-content>
                                     <v-divider></v-divider>
+                                    <v-card flat class="py-4 px-0 grey darken-4">
+                                        <v-card-actions align="center">
+                                            <v-row>
+                                                <v-col cols="12" class="pb-0" >
+                                                    <v-btn @click="loadHisData" dark block small color="primary">Load Time History</v-btn>
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-actions>
+                                    </v-card>
+                                    <v-divider></v-divider>
                                     <v-card class="pa-4 grey darken-4" flat >
                                         <v-sparkline
                                                 :fill="false"
@@ -275,6 +285,7 @@
 <script type="text/javascript">
     var xmlhttp;
     var current_attr, history;
+    var dcjHisData;
     var cameraControls = {
         x_set: 0,
         y_set: 0,
@@ -315,6 +326,11 @@
                 pga: {name: 'PGA', value: null},
                 duration: {name: 'duration', value: null},
                 cav: {name: 'CAV', value: null}
+            }
+        },
+        response: {
+            history: {
+                needsUpdate: 1
             }
         }
     };
@@ -377,6 +393,7 @@
             resetCamera: function () {cameraControls.isReset = 1},
             resetTimeControl: function () {timeControls.isReset = 1},
             updateEqTable: function () {table_attr.earthquake.needsUpdate = 1},
+            loadHisData: function () {table_attr.response.history.needsLoad = 1},
             pauseTimeline: function () { this.ani_paused = !this.ani_paused },
             switch_aniState: function () {
                 this.ani_disabled = !this.ani_disabled;
@@ -388,8 +405,7 @@
 </script>
 
 <script type="text/javascript">
-    function loadXMLDoc(url,cFunc)
-    {
+    function loadXMLDoc(url,cFunc) {
         if (window.XMLHttpRequest)
         {// code for IE7+, Firefox, Chrome, Opera, Safari
             xmlhttp=new XMLHttpRequest();
@@ -402,12 +418,10 @@
         xmlhttp.open("GET",url,true);
         xmlhttp.send();
     }
-    function loadTableData(file)
-    {
-        loadXMLDoc(file,function()
-        {
-            if (xmlhttp.readyState===4 && xmlhttp.status===200)
-            {
+
+    function loadTableData(file) {
+        loadXMLDoc(file,function() {
+            if (xmlhttp.readyState===4 && xmlhttp.status===200) {
                 current_attr = JSON.parse( xmlhttp.response );
                 table_attr.structure.attributes.county.value = current_attr["county"];
                 table_attr.structure.attributes.town.value = current_attr["town"];
