@@ -34,8 +34,6 @@ import { initLight }                from './modules/initLight.js';
 import { initPlane }                from './modules/initPlane.js';
 
 import { updateExtrudedModelsAnimated, updateExtrudedModelsStatic } from './modules/utils.js';
-
-
 // ---------------------------------------------------------------------------------------------------------------------
 
 /*********************
@@ -390,7 +388,7 @@ async function init() {
 function animate() {
     stats.update();
     orbitControls.update();
-    // requestAnimationFrame( animate );
+    
     render();
     
     calculateFPS()
@@ -582,7 +580,6 @@ async function update_IDR(){
         max_time_step = dcj_his.length;
         parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
         for (let ib = 0; ib < map.buildings.number; ib++) {
-            building[ib].his = dcj_his.dcj_his[ib]
             building[ib].his = dcj_his.dcj_his[ib]
         }
     } catch (error) {
