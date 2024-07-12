@@ -27,7 +27,7 @@
                 <v-col cols="7">
                     <v-tabs class="grey darken-4">
                         <v-tab @click="renderPage_1">Attributes</v-tab>
-                        <v-tab @click="renderPage_2">Controls</v-tab>
+                        <v-tab @click="renderPage_2">Tools</v-tab>
                     </v-tabs>
                 </v-col>
             </v-row>
@@ -42,7 +42,7 @@
             <v-card v-if="pageAside === 1" ountlined tile flat class="grey darken-4 mx-auto">
                 <v-row dense>
                     <v-col cols="12">
-                        <v-expansion-panels>
+                        <v-expansion-panels multiple v-model="expandedPanels">
                             <v-expansion-panel class="grey darken-4">
                                 <v-expansion-panel-header class="text-md-subtitle-1">Structures</v-expansion-panel-header>
                                 <v-expansion-panel-content class="pa-0">
@@ -131,7 +131,7 @@
             <v-card v-if="pageAside === 2" ountlined tile flat class="grey darken-4 mx-auto">
                 <v-row dense>
                     <v-col cols="12">
-                        <v-expansion-panels>
+                        <v-expansion-panels v-model="expandedPanels">
                             <v-expansion-panel class="grey darken-4">
                                 <v-expansion-panel-header class="text-md-subtitle-1">Camera Controller</v-expansion-panel-header>
                                 <v-expansion-panel-content>
@@ -340,6 +340,7 @@
         vuetify: new Vuetify({theme: { dark: true },}),
         data:() => ({
             drawer: null,
+            expandedPanels: [0, 1],
             pageAside: 1,
             show: false,
             aside_width: "30%",
