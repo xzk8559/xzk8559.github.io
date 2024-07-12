@@ -82,7 +82,7 @@ let state = {
     animated : false,
     extruded_model : true,
     wireframe : false,
-    extruded_model_num : 10000,
+    extruded_model_num : 13700,
     color_animated : false,
     displacement_animated : false,
     Amplitude : 1.0,
