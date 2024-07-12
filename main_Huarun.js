@@ -3,6 +3,7 @@ import Stats from './modules/three-r165/examples/jsm/libs/stats.module.js';
 import { GUI } from './modules/three-r165/examples/jsm/libs/lil-gui.module.min.js';
 import { GPUStatsPanel } from './modules/three-r165/examples/jsm/utils/GPUStatsPanel.js';
 import { OrbitControls } from './modules/three-r165/examples/jsm/controls/OrbitControls.js';
+import { OBJExporter } from './modules/three-r165/examples/jsm/exporters/OBJExporter.js';
 import { Sky } from './modules/three-r165/examples/jsm/objects/Sky.js';
 import { Lut } from './modules/Lut.js';
 import { pipeLineSegments } from './modules/pipeline.js';
@@ -27,8 +28,13 @@ let state = {
     mieDirectionalG: 0.7,
     elevation: 2,
     azimuth: 0,
-    exposure: null
+    exposure: null,
+    exportToObj: exportToObj,
 };
+
+const link = document.createElement( 'a' );
+link.style.display = 'none';
+document.body.appendChild( link );
 
 document.addEventListener('DOMContentLoaded', async () => {
     await init();
@@ -43,7 +49,7 @@ async function init() {
     initScene();
     initLight( scene );
     initCamera();
-    initPlane( scene );
+    // initPlane( scene );
     initLut();
     initPipeline();
     initControls();
@@ -145,6 +151,9 @@ async function init() {
         skyOptions.add( state, 'azimuth', - 180, 180, 0.1 ).onChange( skyChanged );
         skyOptions.add( state, 'exposure', 0, 1, 0.0001 ).onChange( skyChanged );
         skyOptions.close();
+
+        let exportOptions = gui.addFolder("Export Options");
+        exportOptions.add( state, 'exportToObj' ).name( 'Export OBJ' );
     }
     function onWindowResize() {
         let width = window.innerWidth;
@@ -227,11 +236,27 @@ function initLight(scene) {
     sky = new Sky();
     sky.scale.setScalar( 450000 );
     sun = new THREE.Vector3(0, 100, 0);
-    scene.add( sky );
+    // scene.add( sky );
     state.exposure = renderer.toneMappingExposure;
     skyChanged();
 
     dirLight.position.set( sun.x, sun.y, sun.z );
     scene.add( light );
     scene.add( dirLight );
+}
+
+function exportToObj() {
+    const exporter = new OBJExporter();
+    const result = exporter.parse( scene );
+    saveString( result, 'object.obj' );
+}
+
+function save( blob, filename ) {
+    link.href = URL.createObjectURL( blob );
+    link.download = filename;
+    link.click();
+}
+
+function saveString( text, filename ) {
+    save( new Blob( [ text ], { type: 'text/plain' } ), filename );
 }

@@ -13,6 +13,8 @@ import {OutlinePass}      from './modules/three-r165/examples/jsm/postprocessing
 import {OutputPass}       from './modules/three-r165/examples/jsm/postprocessing/OutputPass.js';
 import {EffectComposer}   from './modules/three-r165/examples/jsm/postprocessing/EffectComposer.js';
 
+import { OBJExporter } from './modules/three-r165/examples/jsm/exporters/OBJExporter.js';
+
 import { Sky } from './modules/three-r165/examples/jsm/objects/Sky.js';
 import { CSS2DRenderer, CSS2DObject } from './modules/three-r165/examples/jsm/renderers/CSS2DRenderer.js';
 // ------------------------------------------------------custom---------------------------------------------------------
@@ -96,18 +98,24 @@ let state = {
     Road_color : '#292c2f',
     Bound_color : '#141414', // orange:'#e36c11',
     // sky
+    sky: !isMobile(),
     turbidity: 5,
     rayleigh: 3,
     mieCoefficient: 0.005,
     mieDirectionalG: 0.7,
     elevation: 2,
     azimuth: 0,
-    exposure: null
+    exposure: null,
+    exportToObj: exportToObj,
 };
 
 let times = new TimeController();
 let sample_rate = 50,
     max_time_step = 0;
+
+const link = document.createElement( 'a' );
+link.style.display = 'none';
+document.body.appendChild( link );
 
 document.addEventListener('DOMContentLoaded', async () => {
     await init();
@@ -138,10 +146,17 @@ async function init() {
     async function initData() {
         NProgress.start();
         try {
-            const [mapData, dcjData, dcjHisData, eqHisData, roadPosData, boundPosData] = await Promise.all([
+            // const [mapData, dcjData, dcjHisData, eqHisData, roadPosData, boundPosData] = await Promise.all([
+            //     jsonLoader('meta.json', './data/PuTuo/'),
+            //     jsonLoader('IDR_500_8219.json', './data/'),
+            //     jsonLoader('h_mainshock_field.json', './data/PuTuo/'),
+            //     jsonLoader('EQ_history.json', './data/'),
+            //     jsonLoader('road.json', './data/PuTuo/'),
+            //     jsonLoader('boundary.json', './data/PuTuo/')
+            // ]);
+            const [mapData, dcjData, eqHisData, roadPosData, boundPosData] = await Promise.all([
                 jsonLoader('meta.json', './data/PuTuo/'),
                 jsonLoader('IDR_500_8219.json', './data/'),
-                jsonLoader('h_mainshock_field.json', './data/PuTuo/'),
                 jsonLoader('EQ_history.json', './data/'),
                 jsonLoader('road.json', './data/PuTuo/'),
                 jsonLoader('boundary.json', './data/PuTuo/')
@@ -149,14 +164,17 @@ async function init() {
     
             map = mapData;
             dcj = dcjData;
-            dcj_his = dcjHisData;
+            // dcj_his = dcjHisData;
             eq_his = eqHisData.eq_his;
             road_pos = roadPosData.roads;
             bound_pos = boundPosData.boundary;
-            max_time_step = dcj_his.length;
+            // max_time_step = dcj_his.length;
+            max_time_step = eq_his.length;
             max_IDR = dcj.dcj_max_top;
-            maxIDRHis = dcj_his.dcj_max;
-            parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
+            // maxIDRHis = dcj_his.dcj_max;
+            maxIDRHis = 1;
+            // parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
+            parent.vm.max_time_step = Math.ceil(eq_his.length / sample_rate);
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -233,7 +251,7 @@ async function init() {
         // scene.add( boundMesh );
     }
     function initModel() {
-        scene.add(  new THREE.AxesHelper( 10 ) );
+        // scene.add(  new THREE.AxesHelper( 10 ) );
         initExtrudedModel();
         initMergedModel( 0 );
         initWireframe();
@@ -316,6 +334,7 @@ async function init() {
         seismicOptions.open();
         
         let skyOptions = gui.addFolder("Sky Options");
+        skyOptions.add( state, "sky").name("Sky Box");
         skyOptions.add( state, 'turbidity', 0.0, 20.0, 0.1 ).onChange( skyChanged );
         skyOptions.add( state, 'rayleigh', 0.0, 4, 0.001 ).onChange( skyChanged );
         skyOptions.add( state, 'mieCoefficient', 0.0, 0.1, 0.001 ).onChange( skyChanged );
@@ -323,6 +342,10 @@ async function init() {
         skyOptions.add( state, 'elevation', 0, 90, 0.1 ).onChange( skyChanged );
         skyOptions.add( state, 'azimuth', - 180, 180, 0.1 ).onChange( skyChanged );
         skyOptions.add( state, 'exposure', 0, 1, 0.0001 ).onChange( skyChanged );
+        skyOptions.close();
+
+        let exportOptions = gui.addFolder("Export Options");
+        exportOptions.add( state, 'exportToObj' ).name( 'Export OBJ' );
     }
     function onWindowResize() {
         let width = window.innerWidth;
@@ -440,6 +463,12 @@ function animate() {
             if (state.extruded_model)   updateModels(renderNum, renderList);
             if (state.wireframe)        scene.add(wf_merge);
             if (state.road)             scene.add(road);
+
+            if (state.sky && sky.parent !== scene) {
+                scene.add(sky);
+            } else if (!state.sky && sky.parent === scene ) {
+                scene.remove(sky);
+            }
         }
         function updateModels(renderNum, renderList) {
             if (parent.vm.switch_anim) {
@@ -543,7 +572,7 @@ function initExtrudedModel(){
     for (let ib = 0; ib < map.buildings.number; ib++) {
         let floor_height = 3.0
         building[ib] = new BlockBuilding(map, ib, floor_height);
-        building[ib].his = dcj_his.dcj_his[ib];
+        // building[ib].his = dcj_his.dcj_his[ib];
         // scene.add(building[ib].getMesh(1));
     }
 }
@@ -617,4 +646,37 @@ function initLabel() {
         labels[ib].layers.set( 0 );
         // labels[ib].center.set( 0.5, 0.5 );
     }
+}
+
+export function exportToObj() {
+    const exporter = new OBJExporter();
+    scene.add( building_merge )
+    const result = exporter.parse( scene );
+    saveString( result, 'object.obj' );
+}
+
+function save( blob, filename ) {
+    link.href = URL.createObjectURL( blob );
+    link.download = filename;
+    link.click();
+}
+
+function saveString( text, filename ) {
+    save( new Blob( [ text ], { type: 'text/plain' } ), filename );
+}
+
+function isMobile() {
+    const toMatch = [
+        /Android/i,
+        /webOS/i,
+        /iPhone/i,
+        /iPad/i,
+        /iPod/i,
+        /BlackBerry/i,
+        /Windows Phone/i
+    ];
+
+    return toMatch.some( (toMatchItem) => {
+        return navigator.userAgent.match(toMatchItem);
+    });
 }

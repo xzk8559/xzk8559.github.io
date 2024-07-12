@@ -1,6 +1,6 @@
 body {
 	margin: 0;
-	background-color: #000000;
+	background-color: #464646;
 	color: #ffffff;
 	font-family: Arial, sans-serif;
 	font-size: 13px;
@@ -8,8 +8,8 @@ body {
 	background-image:url(img_back_compressed.jpg);
 	background-repeat: no-repeat;
 	background-attachment:fixed;
-	background-position: 50% 50%;
-	background-size: 100%;
+	background-position: center center;;
+	background-size: cover;
 }
 .box {
 	position: absolute;
