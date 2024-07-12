@@ -67,17 +67,17 @@ let composer, outlinePass, effectFXAA;
 let sky, sun;
 let labels, labelRenderer;
 
-// let his_list = {
-//     main_field: 'maxIDR_history_MainShock_field1.json',
-//     main_field2: 'maxIDR_history_MainShock_field2.json',
-//     main_field3: 'maxIDR_history_MainShock_field3.json',
-//     main_field4: 'maxIDR_history_MainShock_field4.json',
-// };
+let lastCameraPosition = new THREE.Vector3();
+let lastCameraRotation = new THREE.Euler();
+
+let skipRenderNextFrame = false;
+let lastTime = performance.now();
+let fps = 0;
+
+
 let his_list = {
     main_field: 'h_mainshock_nofield.json',
     main_field2: 'h_mainshock_field.json',
-    // main_field3: 'h_sequshock_field.json',
-    // main_field4: 'maxIDR_history_MainShock_field4.json',
 };
 
 let state = {
@@ -392,23 +392,34 @@ function animate() {
     orbitControls.update();
     // requestAnimationFrame( animate );
     render();
+    
+    calculateFPS()
+    if (fps < 15) state.Sight_Distance = fps * 20;
+    if (parent.vm.switch_anim || hasCameraChanged(camera)) {
+        skipRenderNextFrame = true;
+    }
 
     function render() {
         gpuPanel.startQuery();
         updateParentPage();
         updateScene();
-        renderer.clear();
-        if (parent.vm.switch_interact) {
-            composer.render();
-            renderer.render( scene_lut, camera_lut );
-        }
-        else {
-            renderer.render( scene, camera );
-            renderer.render( scene_lut, camera_lut );
-            // console.log(renderer.info);
+
+        if (skipRenderNextFrame) {
+            renderer.clear();
+            if (parent.vm.switch_interact) {
+                composer.render();
+                renderer.render( scene_lut, camera_lut );
+            }
+            else {
+                renderer.render( scene, camera );
+                renderer.render( scene_lut, camera_lut );
+                // console.log(renderer.info);
+            }
+            onAfterRender();
         }
         labelRenderer.render( scene, camera );
-        onAfterRender();
+
+        skipRenderNextFrame = false;
         gpuPanel.endQuery();
 
         function onAfterRender(){
@@ -690,3 +701,26 @@ function jsonLoader(filename, path) {
       jsonRequest.send(null);
     });
   }
+
+function calculateFPS() {
+    const currentTime = performance.now();
+    const delta = currentTime - lastTime;
+    fps = 1000 / delta;
+    lastTime = currentTime;
+}
+
+function hasCameraChanged(camera) {
+    // Check if the camera position has changed
+    if (!lastCameraPosition.equals(camera.position)) {
+        lastCameraPosition.copy(camera.position);
+        return true;
+    }
+
+    // Check if the camera rotation has changed
+    if (!lastCameraRotation.equals(camera.rotation)) {
+        lastCameraRotation.copy(camera.rotation);
+        return true;
+    }
+
+    return false;
+}

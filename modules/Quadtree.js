@@ -62,22 +62,21 @@ Vector2.prototype = {
 };
 
 // pos = [[0, 0], [1, 0], [0, 1], [1, 1]];
-function Node( pos ){
+class Node {
+    constructor(pos) {
 
-    //this.index = [];
-    this.pos = pos;
-    this.level = 0;
-    this.parent = null;
-    this.children = [];
-    this.object = [];
-    this.visible = false;
-    //this.width = Math.abs((pos[0][0] - pos[1][0]));
-    //this.length = Math.abs((pos[0][1] - pos[2][1]));
-    this.center = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[2][1]) / 2];
+        //this.index = [];
+        this.pos = pos;
+        this.level = 0;
+        this.parent = null;
+        this.children = [];
+        this.object = [];
+        this.visible = false;
+        //this.width = Math.abs((pos[0][0] - pos[1][0]));
+        //this.length = Math.abs((pos[0][1] - pos[2][1]));
+        this.center = [(pos[0][0] + pos[1][0]) / 2, (pos[0][1] + pos[2][1]) / 2];
 
-}
-Node.prototype = {
-
+    }
     /*
     computeIndex: function(){
         this.index[0] = 0;
@@ -85,10 +84,10 @@ Node.prototype = {
         this.index[2] = (this.width + 1) * this.length;
         this.index[3] = (this.width + 1) * (this.length + 1) - 1;
     },*/
-    setVisible: function(){
+    setVisible() {
         this.visible = true;
-    },
-    computeSubNode: function(){
+    }
+    computeSubNode() {
 
         let tmp = {
             down: [this.center[0], this.pos[0][1]],
@@ -106,20 +105,23 @@ Node.prototype = {
         let subNode = [];
         let subPos = [];
         //let subIndex = [];
+        subPos.push([this.pos[0], tmp.down, tmp.left, tmp.center]); // subNode0
+        subPos.push([tmp.down, this.pos[1], tmp.center, tmp.right]); // subNode1
+        subPos.push([tmp.left, tmp.center, this.pos[2], tmp.up]); // subNode2
+        subPos.push([tmp.center, tmp.right, tmp.up, this.pos[3]]); // subNode3
 
-        subPos.push( [this.pos[0], tmp.down, tmp.left, tmp.center] ); // subNode0
-        subPos.push( [tmp.down, this.pos[1], tmp.center, tmp.right] ); // subNode1
-        subPos.push( [tmp.left, tmp.center, this.pos[2], tmp.up] ); // subNode2
-        subPos.push( [tmp.center, tmp.right, tmp.up, this.pos[3]] ); // subNode3
+
+
+
+
 
         //subIndex.push( [this.index[0], tmp.idn, tmp.ile, tmp.ice] );
         //subIndex.push( [tmp.idn, this.index[1], tmp.ice, tmp.iri] );
         //subIndex.push( [tmp.ile, tmp.ice, this.index[2], tmp.iup] );
         //subIndex.push( [tmp.ice, tmp.iri, tmp.iup, this.index[3]] );
-
         for (let i = 0; i < 4; i++) {
 
-            subNode.push( new Node(subPos[i]) );
+            subNode.push(new Node(subPos[i]));
             //subNode[i].index = subIndex[i];
             subNode[i].parent = this;
             subNode[i].level = this.level + 1;
@@ -128,8 +130,7 @@ Node.prototype = {
         this.children = subNode;
 
     }
-
-};
+}
 
 function buildTree( nodeList, iteration ){
 
