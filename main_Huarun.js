@@ -49,7 +49,7 @@ async function init() {
     initScene();
     initLight( scene );
     initCamera();
-    // initPlane( scene );
+    initPlane( scene );
     initLut();
     initPipeline();
     initControls();
@@ -236,7 +236,7 @@ function initLight(scene) {
     sky = new Sky();
     sky.scale.setScalar( 450000 );
     sun = new THREE.Vector3(0, 100, 0);
-    // scene.add( sky );
+    scene.add( sky );
     state.exposure = renderer.toneMappingExposure;
     skyChanged();
 
