@@ -33,6 +33,8 @@ import { BlockBuildingWireframe }   from './modules/blockBuildingWireframe.js';
 import { initLight }                from './modules/initLight.js';
 import { initPlane }                from './modules/initPlane.js';
 
+import { PlaneTiles }               from './modules/planeTiles.js';
+
 import { updateExtrudedModelsAnimated, updateExtrudedModelsStatic } from './modules/utils.js';
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -65,6 +67,8 @@ let composer, outlinePass, effectFXAA;
 let sky, sun;
 let labels, labelRenderer;
 
+let planeTiles;
+
 let lastCameraPosition = new THREE.Vector3();
 let lastCameraRotation = new THREE.Euler();
 
@@ -93,17 +97,24 @@ let state = {
     IDR_type : 'maximum',
     eq_animation : 'main_field2',
     road : true,
-    Road_color : '#292c2f',
+    Road_color : '#494a4b', //'#292c2f',
     Bound_color : '#141414', // orange:'#e36c11',
-    sky: !isMobile(),
-    turbidity: 5,
-    rayleigh: 3,
-    mieCoefficient: 0.005,
-    mieDirectionalG: 0.7,
-    elevation: 2,
-    azimuth: 0,
-    exposure: null,
     exportToObj: exportToObj,
+    skybox: {
+        sky: !isMobile(),
+        turbidity: 5,
+        rayleigh: 3,
+        mieCoefficient: 0.005,
+        mieDirectionalG: 0.7,
+        elevation: 2,
+        azimuth: 0,
+        exposure: null,
+    },
+    maptile: {
+        x: 309.2,
+        y: -1.5,
+        z: 1058.0,
+    }
 };
 
 let times = new TimeController();
@@ -135,7 +146,9 @@ async function init() {
     initLut();
     initControls();
     initGui();
+    initTile( 15 );
 
+    
     window.addEventListener( 'resize', onWindowResize, false );
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
     document.getElementById("WebGL-output").appendChild( renderer.domElement );
@@ -144,11 +157,11 @@ async function init() {
         NProgress.start();
         try {
             const [mapData, dcjData, eqHisData, roadPosData, boundPosData] = await Promise.all([
-                jsonLoader('meta.json', './data/PuTuo/'),
+                jsonLoader('meta_invX.json', './data/PuTuo/'),
                 jsonLoader('IDR_500_8219.json', './data/'),
                 jsonLoader('EQ_history.json', './data/'),
-                jsonLoader('road.json', './data/PuTuo/'),
-                jsonLoader('boundary.json', './data/PuTuo/')
+                jsonLoader('road_invX.json', './data/PuTuo/'),
+                jsonLoader('boundary_invX.json', './data/PuTuo/')
             ]);
     
             map = mapData;
@@ -184,6 +197,7 @@ async function init() {
         renderer.shadowMap.enabled = false;
         renderer.autoClear = false;
         renderer.setAnimationLoop( animate );
+        renderer.localClippingEnabled = true;
         
         labelRenderer = new CSS2DRenderer();
         labelRenderer.setSize( window.innerWidth, window.innerHeight );
@@ -207,12 +221,12 @@ async function init() {
         sun = new THREE.Vector3();
         scene.add( sky );
 
-        state.exposure = renderer.toneMappingExposure;
+        state.skybox.exposure = renderer.toneMappingExposure;
         skyChanged();
     }
     function initCamera() {
         camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1800);
-        camera.position.set( 600, 600, 150 );
+        camera.position.set( -600, 600, 150 );
         camera.layers.enable( 0 ); // enabled by default
         camera.layers.enable( 1 );
         camera.layers.enable( 2 );
@@ -230,7 +244,7 @@ async function init() {
         road.onAfterRender = function () { scene.remove(road) }
 
         bound = Bound_LineSegments( bound_pos[0], state.Bound_color );
-        scene.add( bound );
+        // scene.add( bound );
 
         // boundMesh = boundaryMesh( bound_pos[0], state.Bound_color );
         // scene.add( boundMesh );
@@ -240,6 +254,7 @@ async function init() {
         initExtrudedModel();
         initMergedModel( 0 );
         initWireframe();
+        // console.log(map);
         node = quadTree( map, building, treeIteration );
     }
     function initLut(){
@@ -278,7 +293,7 @@ async function init() {
         orbitControls = new OrbitControls(camera, labelRenderer.domElement);
         orbitControls.maxPolarAngle = 0.95 * Math.PI / 2;
         orbitControls.minPolarAngle = 0.10 * Math.PI / 2;
-        orbitControls.target.set( 600, 0, 300 );
+        orbitControls.target.set( -600, 0, 300 );
 
         orbitControls.enableDamping = false;
         orbitControls.dampingFactor = 0.3;
@@ -319,18 +334,30 @@ async function init() {
         seismicOptions.open();
         
         let skyOptions = gui.addFolder("Sky Options");
-        skyOptions.add( state, "sky").name("Sky Box");
-        skyOptions.add( state, 'turbidity', 0.0, 20.0, 0.1 ).onChange( skyChanged );
-        skyOptions.add( state, 'rayleigh', 0.0, 4, 0.001 ).onChange( skyChanged );
-        skyOptions.add( state, 'mieCoefficient', 0.0, 0.1, 0.001 ).onChange( skyChanged );
-        skyOptions.add( state, 'mieDirectionalG', 0.0, 1, 0.001 ).onChange( skyChanged );
-        skyOptions.add( state, 'elevation', 0, 90, 0.1 ).onChange( skyChanged );
-        skyOptions.add( state, 'azimuth', - 180, 180, 0.1 ).onChange( skyChanged );
-        skyOptions.add( state, 'exposure', 0, 1, 0.0001 ).onChange( skyChanged );
+        skyOptions.add( state.skybox, "sky").name("Sky Box");
+        skyOptions.add( state.skybox, 'turbidity', 0.0, 20.0, 0.1 ).onChange( skyChanged );
+        skyOptions.add( state.skybox, 'rayleigh', 0.0, 4, 0.001 ).onChange( skyChanged );
+        skyOptions.add( state.skybox, 'mieCoefficient', 0.0, 0.1, 0.001 ).onChange( skyChanged );
+        skyOptions.add( state.skybox, 'mieDirectionalG', 0.0, 1, 0.001 ).onChange( skyChanged );
+        skyOptions.add( state.skybox, 'elevation', 0, 90, 0.1 ).onChange( skyChanged );
+        skyOptions.add( state.skybox, 'azimuth', - 180, 180, 0.1 ).onChange( skyChanged );
+        skyOptions.add( state.skybox, 'exposure', 0, 1, 0.0001 ).onChange( skyChanged );
         skyOptions.close();
+
+        let mapTileOptions = gui.addFolder("Map Tile Options");
+        mapTileOptions.add(state.maptile, 'x', -280, 350).step(0.1).name("X");
+        mapTileOptions.add(state.maptile, 'y', -1, 1).step(0.1).name("Y");
+        mapTileOptions.add(state.maptile, 'z', 1000, 1100).step(0.1).name("Z");
 
         let exportOptions = gui.addFolder("Export Options");
         exportOptions.add( state, 'exportToObj' ).name( 'Export OBJ' );
+    }
+
+    function initTile(zoom) {
+        planeTiles = new PlaneTiles(zoom);
+        planeTiles.meshes.forEach( tile => {
+            scene.add( tile );
+        });
     }
     function onWindowResize() {
         let width = window.innerWidth;
@@ -394,7 +421,7 @@ function animate() {
     calculateFPS()
     if (fps < 15) state.Sight_Distance = fps * 20;
     if (parent.vm.switch_anim || hasCameraChanged(camera)) {
-        skipRenderNextFrame = true;
+        skipRenderNextFrame = false;
     }
 
     function render() {
@@ -402,7 +429,7 @@ function animate() {
         updateParentPage();
         updateScene();
 
-        if (skipRenderNextFrame) {
+        if (!skipRenderNextFrame) {
             renderer.clear();
             if (parent.vm.switch_interact) {
                 composer.render();
@@ -460,9 +487,11 @@ function animate() {
             if (state.wireframe)        scene.add(wf_merge);
             if (state.road)             scene.add(road);
 
-            if (state.sky && sky.parent !== scene) {
+            planeTiles.setPos( state.maptile.x, state.maptile.y, state.maptile.z);
+
+            if (state.skybox.sky && sky.parent !== scene) {
                 scene.add(sky);
-            } else if (!state.sky && sky.parent === scene ) {
+            } else if (!state.skybox.sky && sky.parent === scene ) {
                 scene.remove(sky);
             }
         }
@@ -612,19 +641,19 @@ function updateParentPage(){
 
 function skyChanged() {
     const uniforms = sky.material.uniforms;
-    uniforms[ 'turbidity' ].value = state.turbidity;
-    uniforms[ 'rayleigh' ].value = state.rayleigh;
-    uniforms[ 'mieCoefficient' ].value = state.mieCoefficient;
-    uniforms[ 'mieDirectionalG' ].value = state.mieDirectionalG;
+    uniforms[ 'turbidity' ].value = state.skybox.turbidity;
+    uniforms[ 'rayleigh' ].value = state.skybox.rayleigh;
+    uniforms[ 'mieCoefficient' ].value = state.skybox.mieCoefficient;
+    uniforms[ 'mieDirectionalG' ].value = state.skybox.mieDirectionalG;
 
-    const phi = THREE.MathUtils.degToRad( 90 - state.elevation );
-    const theta = THREE.MathUtils.degToRad( state.azimuth );
+    const phi = THREE.MathUtils.degToRad( 90 - state.skybox.elevation );
+    const theta = THREE.MathUtils.degToRad( state.skybox.azimuth );
 
     sun.setFromSphericalCoords( 1, phi, theta );
 
     uniforms[ 'sunPosition' ].value.copy( sun );
 
-    renderer.toneMappingExposure = state.exposure;
+    renderer.toneMappingExposure = state.skybox.exposure;
 }
 
 function initLabel() {

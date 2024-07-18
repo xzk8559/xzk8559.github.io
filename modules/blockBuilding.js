@@ -81,10 +81,9 @@ export class BlockBuilding {
 
         let material = new THREE.MeshBasicMaterial({
             vertexColors: true,
-            // side: THREE.DoubleSide,
+            side: THREE.DoubleSide,
             precision: 'lowp',
             transparent: false,
-            // opacity: 0.4,
         });
 
         let mesh = new THREE.Mesh(geometry, material);

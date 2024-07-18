@@ -4,7 +4,7 @@ import { LineGeometry } from './three-r165/examples/jsm/lines/LineGeometry.js';
 import { triangulate, exchange0And1 } from './utilsModeling.js';
 import * as THREE from './three-r165/build/three.module.js';
 
-const X_OFFSET = - 2.0;
+const X_OFFSET = 0.5;
 const Z_OFFSET = -10.0;
 const SCALE_FACTOR = 0.854;
 
