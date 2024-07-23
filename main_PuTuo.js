@@ -97,8 +97,8 @@ let state = {
     IDR_type : 'maximum',
     eq_animation : 'main_field2',
     road : true,
-    Road_color : '#494a4b', //'#292c2f',
-    Bound_color : '#141414', // orange:'#e36c11',
+    Road_color : '#121212', //'#292c2f',
+    Bound_color : '#ababab', // orange:'#e36c11',
     exportToObj: exportToObj,
     skybox: {
         sky: !isMobile(),
@@ -244,7 +244,7 @@ async function init() {
         road.onAfterRender = function () { scene.remove(road) }
 
         bound = Bound_LineSegments( bound_pos[0], state.Bound_color );
-        // scene.add( bound );
+        scene.add( bound );
 
         // boundMesh = boundaryMesh( bound_pos[0], state.Bound_color );
         // scene.add( boundMesh );

@@ -23,7 +23,7 @@ export class PlaneTiles {
         let planeGeometry = new THREE.PlaneGeometry(tileWidth, tileWidth);
         for (let i = 0; i < nTilesX; i++) {
             for (let j = 0; j < nTilesY; j++) {
-                let planeMaterial = new THREE.MeshBasicMaterial({transparent: false, opacity: 0.95, color: '#404040', clippingPlanes: [ localPlane1, localPlane2, localPlane3, localPlane4 ], clipIntersection: false});
+                let planeMaterial = new THREE.MeshBasicMaterial({transparent: false, opacity: 0.925, color: '#404040', clippingPlanes: [ localPlane1, localPlane2, localPlane3, localPlane4 ], clipIntersection: false});
                 let planeTile = new THREE.Mesh(planeGeometry, planeMaterial);
                 pxy = this.getTileCoords(tileWidth, i, j);
                 planeTile.userData.relPos = [pxy[0]-this.originPos[0], pxy[1]-this.originPos[1]]
