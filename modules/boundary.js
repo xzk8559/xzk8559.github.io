@@ -4,9 +4,9 @@ import { LineGeometry } from './three-r165/examples/jsm/lines/LineGeometry.js';
 import { triangulate, exchange0And1 } from './utilsModeling.js';
 import * as THREE from './three-r165/build/three.module.js';
 
-const X_OFFSET = 0.5;
+const X_OFFSET = 1.0;
 const Z_OFFSET = -10.0;
-const SCALE_FACTOR = 0.854;
+const SCALE_FACTOR = 0.855;
 
 export function Bound_LineSegments( pos, color ) {
     let bound;
@@ -15,7 +15,7 @@ export function Bound_LineSegments( pos, color ) {
 
     let bound_material = new LineMaterial( {
         color: color,
-        linewidth: 6,
+        linewidth: 4.5,
         dashed: false,
         alphaToCoverage: true,
     } );
