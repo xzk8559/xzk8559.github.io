@@ -158,7 +158,7 @@ async function init() {
         try {
             const [mapData, dcjData, eqHisData, roadPosData, boundPosData] = await Promise.all([
                 jsonLoader('meta_invX.json', './data/PuTuo/'),
-                jsonLoader('IDR_500_8219.json', './data/'),
+                jsonLoader('R3917_20240713.json', './data/'), //jsonLoader('IDR_500_8219.json', './data/'),
                 jsonLoader('EQ_history.json', './data/'),
                 jsonLoader('road_invX.json', './data/PuTuo/'),
                 jsonLoader('boundary_invX.json', './data/PuTuo/')
