@@ -67,7 +67,8 @@ function applyDisplacement(mesh, floorIndex, pointCount, displacement) {
 }
 
 function calculateColorInterpolation(history, timeStep, maxIDRHis, lut) {
-    const temp = 8.0;
+    // const temp = 8.0; // old
+    const temp = 50; // v20240713
     const currentHis = history[timeStep];
     // return lut.getColor( Math.abs(currentHis) / maxIDRHis );
     return lut.getColor( Math.abs(currentHis) / temp );

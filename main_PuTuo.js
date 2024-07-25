@@ -80,6 +80,7 @@ let fps = 0;
 let his_list = {
     main_field: 'h_mainshock_nofield.json',
     main_field2: 'h_mainshock_field.json',
+    main_field3: 'RH3917_20240713.json',
 };
 
 let state = {
@@ -95,7 +96,7 @@ let state = {
     Update_response : update_IDR,
     eq_select : 0,
     IDR_type : 'maximum',
-    eq_animation : 'main_field2',
+    eq_animation : 'main_field3',
     road : true,
     Road_color : '#121212', //'#292c2f',
     Bound_color : '#ababab', // orange:'#e36c11',
@@ -158,7 +159,7 @@ async function init() {
         try {
             const [mapData, dcjData, eqHisData, roadPosData, boundPosData] = await Promise.all([
                 jsonLoader('meta_invX.json', './data/PuTuo/'),
-                jsonLoader('R3917_20240713.json', './data/'), //jsonLoader('IDR_500_8219.json', './data/'),
+                jsonLoader('R3917_20240713.json', './data/PuTuo/'), //jsonLoader('IDR_500_8219.json', './data/'),
                 jsonLoader('EQ_history.json', './data/'),
                 jsonLoader('road_invX.json', './data/PuTuo/'),
                 jsonLoader('boundary_invX.json', './data/PuTuo/')
@@ -557,7 +558,8 @@ function updateEqTable(){
 
 function loadResHisData() {
     NProgress.start();
-    let file = "h_mainshock_field.json";
+    // let file = "h_mainshock_field.json";
+    let file = "RH3917_20240713.json";
     // load data
     jsonLoader(file, './data/PuTuo/').then(data => {
         dcj_his = data;
