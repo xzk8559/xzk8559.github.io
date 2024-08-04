@@ -7,7 +7,7 @@ export class TubePipe {
         this.lut = lut;
         this.coords = map.coords[ib];
         this.coordsScale = map.coordsScale;
-        this.visualScale = this.coordsScale * 0.001 * 10;
+        this.visualScale = this.coordsScale * 0.001 * 1;
         this.pointCount = this.coords.length;
         this.diameter = map.attributes.DIAMETER[ib]; // mm
         this.depth1 = map.attributes.START_DEPT[ib];
