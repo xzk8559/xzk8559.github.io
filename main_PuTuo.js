@@ -126,19 +126,10 @@ const link = document.createElement( 'a' );
 link.style.display = 'none';
 document.body.appendChild( link );
 
-
 const { createClient } = supabase;
 const supabaseUrl = 'https://vkifllvdhmycnuuqqqme.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZraWZsbHZkaG15Y251dXFxcW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjM1OTkzNzAsImV4cCI6MjAzOTE3NTM3MH0.2R_dU5-hx84QhX4509Y4-on4MmilmW7PNCIzW4KyKrU';
 const _supabase = createClient(supabaseUrl, supabaseKey);
-
-async function fetchData() {
-    let { data: testData, error } = await _supabase.from('buildings').select('storey').range(0, 9);
-    console.log(testData);
-}
-
-fetchData();
-
 
 document.addEventListener('DOMContentLoaded', async () => {
     await init();
