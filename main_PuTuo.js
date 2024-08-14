@@ -126,6 +126,20 @@ const link = document.createElement( 'a' );
 link.style.display = 'none';
 document.body.appendChild( link );
 
+
+const { createClient } = supabase;
+const supabaseUrl = 'https://vkifllvdhmycnuuqqqme.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZraWZsbHZkaG15Y251dXFxcW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjM1OTkzNzAsImV4cCI6MjAzOTE3NTM3MH0.2R_dU5-hx84QhX4509Y4-on4MmilmW7PNCIzW4KyKrU';
+const _supabase = createClient(supabaseUrl, supabaseKey);
+
+async function fetchData() {
+    let { data: testData, error } = await _supabase.from('buildings').select('storey').range(0, 9);
+    console.log(testData);
+}
+
+fetchData();
+
+
 document.addEventListener('DOMContentLoaded', async () => {
     await init();
     animate();
@@ -536,8 +550,20 @@ function computeFrustumFromCamera(camera) {
 async function setBuildingData() {
     if (selectedObject) {
         let geo = selectedObject.geometry;
-        let file = "./request/bid_" + selectedObject.userData.parent.ib.toString() + ".json";
-        parent.loadTableData(file);
+        // let file = "./request/bid_" + selectedObject.userData.parent.ib.toString() + ".json";
+        // parent.loadTableData(file);
+
+        let { data: fetchData, error } = await _supabase.from('buildings')
+        .select('id, county, town, circleNum, builtYear, floorArea, buildArea')
+        .range(selectedObject.userData.parent.ib, selectedObject.userData.parent.ib);
+
+        parent.table_attr.structure.attributes.county.value = fetchData[0]["county"];
+        parent.table_attr.structure.attributes.town.value = fetchData[0]["town"];
+        parent.table_attr.structure.attributes.circleNum.value = fetchData[0]["circleNum"];
+        parent.table_attr.structure.attributes.builtYear.value = fetchData[0]["builtYear"];
+        parent.table_attr.structure.attributes.floorArea.value = fetchData[0]["floorArea"].toFixed(2);
+        parent.table_attr.structure.attributes.buildArea.value = fetchData[0]["buildArea"].toFixed(2);
+
         parent.table_attr.structure.attributes.bid.value = selectedObject.userData.parent.ib;
         parent.table_attr.structure.attributes.height.value = selectedObject.userData.parent.height;
         parent.table_attr.structure.attributes.floor.value = selectedObject.userData.parent.floor;
