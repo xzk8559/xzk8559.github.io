@@ -148,7 +148,7 @@ async function init() {
     initRoad();
     initModel();
     initLabel();
-    iniPostprocess()
+    initPostprocess()
     initLut();
     initControls();
     initGui();
@@ -177,6 +177,8 @@ async function init() {
     
             map = mapData;
             map.buildings.number = 100;
+            map.buildings.height = map.buildings.height.slice(0, map.buildings.number);
+            map.buildings.bounds = map.buildings.bounds.slice(0, map.buildings.number);
             dcj = dcjData;
             eq_his = eqHisData.eq_his;
             // road_pos = roadPosData.roads;
@@ -280,7 +282,7 @@ async function init() {
         lut.setMax( 1 );
         lut.setMin( 0 );
     }
-    function iniPostprocess() {
+    function initPostprocess() {
         composer = new EffectComposer( renderer );
         let renderPass = new RenderPass( scene, camera );
         composer.addPass( renderPass );
