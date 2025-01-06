@@ -58,7 +58,7 @@ let stats, gpuPanel, orbitControls, gui;
 let renderer, scene, camera, raycaster;
 let building, building_merge, wf_merge;
 let mouse = new THREE.Vector2(), selectedObject, nearestObject;
-let treeIteration = 6;
+let treeIteration = 3;
 
 let dcj, dcj_his, eq_his, max_IDR, maxIDRHis; // earthquake & response
 let lut, sprite, scene_lut, camera_lut;
@@ -147,7 +147,7 @@ async function init() {
     initLight( scene );
     initRoad();
     initModel();
-    initLabel();
+    // initLabel();
     initPostprocess()
     initLut();
     initControls();
@@ -176,7 +176,7 @@ async function init() {
             ]);
     
             map = mapData;
-            map.buildings.number = 100;
+            map.buildings.number = 1000;
             map.buildings.height = map.buildings.height.slice(0, map.buildings.number);
             map.buildings.bounds = map.buildings.bounds.slice(0, map.buildings.number);
             dcj = dcjData;
@@ -270,6 +270,7 @@ async function init() {
         initWireframe();
         // console.log(map);
         node = quadTree( map, building, treeIteration );
+        // console.log(building);
     }
     function initLut(){
         lut = new Lut( 'custom', 32 );
