@@ -6,9 +6,9 @@ export class BlockBuilding {
         this.map = map;
         this.ib = ib;
         this.floorHeight = floorHeight;
-        this.height = this.map.buildings.height[ib];
+        this.height = this.map.buildings.height;
         this.floor = Math.max(Math.floor( this.height / floorHeight ), 1);
-        this.bounds = this.map.buildings.bounds[this.ib].reverse();
+        this.bounds = this.map.buildings.bounds; // .reverse()
         this.pointCount = this.bounds.length;
         this.level = 1;
         this.his = 0;
@@ -31,7 +31,7 @@ export class BlockBuilding {
         for (let i0 = 0; i0 < this.floor + 1; i0++) {
             for (let i1 = 0; i1 < pN; i1++) {
                 const [x, z] = this.bounds[i1];
-                let y = i0 * this.floorHeight * this.map['coordinate scale'];
+                let y = i0 * this.floorHeight * this.map.coordinate_scale;
                 let colorShift = (i0 / this.floor - 1) * 0.03;
                 vertices.push(x, y, z);
                 colors.push(0.18 + colorShift, 0.18 + colorShift, 0.2 + colorShift);
@@ -54,7 +54,7 @@ export class BlockBuilding {
         for (let i1 = 0; i1 < pN; i1++) {
             let x = this.bounds[i1][0];
             let z = this.bounds[i1][1];
-            vertices2.push(x, this.height * this.map['coordinate scale'], z);
+            vertices2.push(x, this.height * this.map.coordinate_scale, z);
             colors2.push(0.18, 0.18, 0.2);
         }
 

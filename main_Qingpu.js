@@ -34,6 +34,7 @@ import { initLight }                from './modules/initLight.js';
 import { initPlane }                from './modules/initPlane.js';
 
 import { PlaneTiles }               from './modules/planeTiles.js';
+import { ChunkManager }             from './modules/ChunkManager.js';
 
 import { updateExtrudedModelsAnimated, updateExtrudedModelsStatic } from './modules/utils.js';
 // ---------------------------------------------------------------------------------------------------------------------
@@ -58,7 +59,7 @@ let stats, gpuPanel, orbitControls, gui;
 let renderer, scene, camera, raycaster;
 let building, building_merge, wf_merge;
 let mouse = new THREE.Vector2(), selectedObject, nearestObject;
-let treeIteration = 3;
+let treeIteration = 7;
 
 let dcj, dcj_his, eq_his, max_IDR, maxIDRHis; // earthquake & response
 let lut, sprite, scene_lut, camera_lut;
@@ -68,6 +69,7 @@ let sky, sun;
 let labels, labelRenderer;
 
 let planeTiles;
+let chunkManager;
 
 let lastCameraPosition = new THREE.Vector3();
 let lastCameraRotation = new THREE.Euler();
@@ -143,16 +145,16 @@ async function init() {
     initRender();
     initScene();
     initCamera();
-    initPlane( scene );
+    initPlane( scene, map );
     initLight( scene );
     initRoad();
     initModel();
-    // initLabel();
+    initLabel();
     initPostprocess()
     initLut();
     initControls();
     initGui();
-    initTile( 15 );
+    // initTile( 15 );
 
     
     window.addEventListener( 'resize', onWindowResize, false );
@@ -170,13 +172,13 @@ async function init() {
             //     jsonLoader('boundary_invX.json', './data/PuTuo/')
             // ]);
             const [mapData, dcjData, eqHisData] = await Promise.all([
-                jsonLoader('meta-Qingpu-20250106.json', './data/Qingpu/'),
-                jsonLoader('R3917_20240713.json', './data/PuTuo/'), //jsonLoader('IDR_500_8219.json', './data/'),
-                jsonLoader('EQ_history.json', './data/'),
+                fetchJSON('./data/Qingpu/', 'meta-Qingpu-20250106.json'),
+                fetchJSON('./data/PuTuo/', 'R3917_20240713.json'), 
+                fetchJSON('./data/', 'EQ_history.json'),
             ]);
     
             map = mapData;
-            map.buildings.number = 1000;
+            map.buildings.number = 50000;
             map.buildings.height = map.buildings.height.slice(0, map.buildings.number);
             map.buildings.bounds = map.buildings.bounds.slice(0, map.buildings.number);
             dcj = dcjData;
@@ -270,7 +272,7 @@ async function init() {
         initWireframe();
         // console.log(map);
         node = quadTree( map, building, treeIteration );
-        // console.log(building);
+        // console.log(node);
     }
     function initLut(){
         lut = new Lut( 'custom', 32 );
@@ -500,9 +502,9 @@ function animate() {
             let renderNum = Math.min(state.extruded_model_num, renderList.length);
             if (state.extruded_model)   updateModels(renderNum, renderList);
             if (state.wireframe)        scene.add(wf_merge);
-            if (state.road)             scene.add(road);
+            // if (state.road)             scene.add(road);
 
-            planeTiles.setPos( state.maptile.x, state.maptile.y, state.maptile.z);
+            // planeTiles.setPos( state.maptile.x, state.maptile.y, state.maptile.z);
 
             if (state.skybox.sky && sky.parent !== scene) {
                 scene.add(sky);
@@ -754,6 +756,14 @@ function jsonLoader(filename, path) {
     
         jsonRequest.send(null);
     });
+}
+async function fetchJSON(path, filename) {
+    const url = `${path}${filename}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to load ${url}: ${response.statusText}`);
+    }
+    return response.json();
 }
 
 function calculateFPS() {

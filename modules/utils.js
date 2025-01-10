@@ -96,3 +96,46 @@ function calculateLevel(object, camera, distance) {
         return 0
     }
 }
+
+import * as THREE from '../modules/three-r165/build/three.module.js';
+
+/**
+ * Example function to create a bounding box from chunk bounds.
+ *  - chunkBounds has minx, maxx, miny, maxy for 2D (X,Z).
+ *  - We'll assume Y=0..200, or adapt to your data.
+ */
+export function createBoundingBox(chunkBounds) {
+    // You might store actual minY/maxY in chunk data. Here, we just guess 0..200:
+    const minVec = new THREE.Vector3(chunkBounds.minx, 0, chunkBounds.miny);
+    const maxVec = new THREE.Vector3(chunkBounds.maxx, 50, chunkBounds.maxy);
+    return new THREE.Box3(minVec, maxVec);
+}
+
+/**
+ * Expand an existing Box3 by a scalar margin in all directions (x, y, z).
+ * This helps implement hysteresis margins.
+ */
+export function expandBox3(box, margin) {
+    const expanded = box.clone();
+    expanded.min.subScalar(margin);
+    expanded.max.addScalar(margin);
+    return expanded;
+}
+
+/**
+ * Check if the camera frustum intersects an expanded bounding box.
+ * Returns true if the chunk is considered "in view".
+ */
+export function isBoxIntersectingCameraFrustum(camera, box) {
+    // 1. Create a frustum from the camera
+    const frustum = new THREE.Frustum();
+    const projScreenMatrix = new THREE.Matrix4();
+
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+    projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustum.setFromProjectionMatrix(projScreenMatrix);
+
+    // 2. Check intersection
+    return frustum.intersectsBox(box);
+}

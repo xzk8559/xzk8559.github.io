@@ -3,15 +3,12 @@
 export function quadTree(map, buildings, iteration) {
 
     let offset = 12.5;
-    let x_max = map.mapbounds["-maxx"] + offset;
-    let x_min = map.mapbounds["-minx"] - offset;
-    let z_max = map.mapbounds["-maxy"] + offset;
-    let z_min = map.mapbounds["-miny"] - offset;
-    //console.log([[x_min, z_min], [x_max, z_min], [x_min, z_max], [x_max, z_max]]);
-    // console.log((x_max+x_min)/2, (z_max+z_min)/2, (x_max-x_min), (z_max-z_min))
+    let x_max = map.mapbounds["maxx"] + offset;
+    let x_min = map.mapbounds["minx"] - offset;
+    let z_max = map.mapbounds["maxy"] + offset;
+    let z_min = map.mapbounds["miny"] - offset;
 
     let node = [new Node( [[x_min, z_min], [x_max, z_min], [x_min, z_max], [x_max, z_max]] )];
-    // console.log(node);
     //node[0].computeIndex();
 
     buildTree( node, iteration );
@@ -22,8 +19,6 @@ export function quadTree(map, buildings, iteration) {
 
         buildings[ib].getMesh().geometry.computeBoundingSphere();
         let pb = [buildings[ib].getMesh(1).geometry.boundingSphere.center.x, buildings[ib].getMesh(1).geometry.boundingSphere.center.z];
-        //console.log("obj center: ", pb);
-        //console.log("obj number: ", ib);
 
         bindingObject( pb, ib, node, iteration );
 
@@ -151,6 +146,7 @@ function bindingObject( point, ib, node, iteration ) {
     for (let i = 0; i < node.length; i++){
         // console.log(node);
         // console.log(point);
+        // console.log(isPointInQuad(point, node[i].pos));
         if ( isPointInQuad(point, node[i].pos) ){
             i_in = i;
             // console.log(i_in);
@@ -163,8 +159,8 @@ function bindingObject( point, ib, node, iteration ) {
     }
     //console.log('push for node ', i_in);
     // console.log(i_in);
+    // console.log('pushed :', node[i_in]);
     node[i_in].object.push(ib);
-    //console.log('pushed :', node[i_in]);
 
     if (node[i_in].level < iteration){
         //console.log('next level input: ', node[i_in].children);
@@ -185,18 +181,5 @@ function isPointInQuad(point, quadPos){
     let f1 = ab.dot(ap) * dc.dot(dp) >= 0;
     let f2 = ac.dot(ap) * db.dot(dp) >= 0;
     return f1 && f2
-
-}
-
-// 经度lon转墨卡托
-function handle_x(x) { return -( x / 180.0 ) * 20037508.3427892 }
-// 纬度lat转墨卡托
-function handle_y(y){
-
-    if ( y > 85.05112 ) { y = 85.0511288 }
-    if ( y < -85.05112) { y = -85.0511288 }
-    y = ( Math.PI / 180.0 ) * y;
-    let tmp = Math.PI / 4.0 + y / 2.0;
-    return 20037508.3427892 * Math.log(Math.tan(tmp)) / Math.PI
 
 }
