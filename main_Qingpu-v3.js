@@ -92,7 +92,6 @@ loadChunkFilesList();
 let lastCameraPosition = new THREE.Vector3();
 let lastCameraRotation = new THREE.Euler();
 
-let skipRenderNextFrame = false;
 let lastTime = performance.now();
 let fps = 0;
 
@@ -163,7 +162,7 @@ async function init() {
     initRender();
     initScene();
     initCamera();
-    initPlane( scene, map );
+    initPlane( scene, meta );
     initLight( scene );
 
     chunkManager = new ChunkManager(scene, meta, createBuildingsFromChunk);
@@ -186,18 +185,13 @@ async function init() {
     async function initData() {
         NProgress.start();
         try {
-            const [metaData, mapData, dcjData, eqHisData] = await Promise.all([
+            const [metaData, dcjData, eqHisData] = await Promise.all([
                 fetchJSON('./data/Qingpu/', 'meta-Qingpu-20250110.json'),
-                fetchJSON('./data/Qingpu/', 'meta-Qingpu-20250106.json'),
                 fetchJSON('./data/PuTuo/', 'R3917_20240713.json'), 
                 fetchJSON('./data/', 'EQ_history.json'),
             ]);
     
             meta = metaData;
-            map = mapData;
-            map.buildings.number = 100;
-            map.buildings.height = map.buildings.height.slice(0, map.buildings.number);
-            map.buildings.bounds = map.buildings.bounds.slice(0, map.buildings.number);
             dcj = dcjData;
             eq_his = eqHisData.eq_his;
             // road_pos = roadPosData.roads;
@@ -205,7 +199,7 @@ async function init() {
             max_time_step = meta.T; //eq_his.length;
             max_IDR = dcj.dcj_max_top;
             maxIDRHis = 1;
-            parent.vm.max_time_step = Math.ceil(eq_his.length / sample_rate);
+            parent.vm.max_time_step = Math.ceil(max_time_step / sample_rate);
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -299,9 +293,6 @@ async function init() {
         initExtrudedModel();
         initMergedModel( 0 );
         initWireframe();
-        // console.log(map);
-        node = quadTree( map, building, treeIteration );
-        // console.log(node);
     }
     function initLut(){
         lut = new Lut( 'custom', 32 );
@@ -368,7 +359,7 @@ async function init() {
         generalOptions.open();
 
         let performanceOptions = gui.addFolder("Performance Options");
-        performanceOptions.add(state, "extruded_model_num", 0, map.buildings.number).step(1.0).name(`ExtrudedModel Number (<${map.buildings.number})`);
+        performanceOptions.add(state, "extruded_model_num", 0, meta.total_buildings).step(1.0).name(`ExtrudedModel Number (<${meta.total_buildings})`);
         performanceOptions.add(state, 'Sight_Distance', 100, 1000).step(5).name("Sight Distance");
         performanceOptions.open();
 
@@ -482,7 +473,6 @@ function animate() {
                     if (mat && mat.uniforms && mat.uniforms.uTimeStep) {
                         mat.uniforms.uTimeStep.value = Math.floor(t); // floor(t), or some fraction
                     }
-                    // console.log('Updating chunk:', chunkKey, t, mat.uniforms);
                 }
             }
         }
@@ -490,67 +480,25 @@ function animate() {
 
     render();
     
-    calculateFPS()
-    // if (fps < 15) state.Sight_Distance = fps * 20;
-    if (parent.vm.switch_anim || cameraChanged) {
-        skipRenderNextFrame = false;
-    }
-
     function render() {
         gpuPanel.startQuery();
         updateParentPage();
         updateScene();
 
-        if (!skipRenderNextFrame) {
-            renderer.clear();
-            if (parent.vm.switch_interact) {
-                composer.render();
-                renderer.render( scene_lut, camera_lut );
-            }
-            else {
-                renderer.render( scene, camera );
-                renderer.render( scene_lut, camera_lut );
-                // console.log(renderer.info);
-            }
-            // onAfterRender();
+        renderer.clear();
+        if (parent.vm.switch_interact) {
+            composer.render();
+            renderer.render( scene_lut, camera_lut );
+        }
+        else {
+            renderer.render( scene, camera );
+            renderer.render( scene_lut, camera_lut );
+            // console.log(renderer.info);
         }
         // labelRenderer.render( scene, camera );
 
-        skipRenderNextFrame = false;
         gpuPanel.endQuery();
 
-        function onAfterRender(){
-            for (let c = 0; c < scene.children.length; c++){
-                let child = scene.children[c];
-                if ( (child.isMesh === true)&&(child.layers.mask===3) ) {
-                    scene.remove(child);
-                    child.visible = false;
-                    child.remove(labels[child.userData.parent.ib]);
-    
-                    if (state.color_animated && times.current_step > child.userData.parent.his.length){
-                        if (child.userData.parent.level == 1) {
-                            for (let i = 0; i < child.userData.parent.floor+1; i++) {
-                                let tmp = (i / child.userData.parent.floor - 1) * 0.03;
-                                let pointCount = map.buildings.bounds[child.userData.parent.ib].length;
-                                for (let n = 0; n < pointCount; n++) {
-                                    child.geometry.attributes.color.array[(i * pointCount + n) * 3] = 0.18 + tmp;
-                                    child.geometry.attributes.color.array[(i * pointCount + n) * 3 + 1] = 0.18 + tmp;
-                                    child.geometry.attributes.color.array[(i * pointCount + n) * 3 + 2] = 0.2 + tmp;
-                                }
-                            }
-                        } else {
-                            for (let n = 0; n < pointCount; n++) {
-                                child.geometry.attributes.color.array[n * 3] = 0.18;
-                                child.geometry.attributes.color.array[n * 3 + 1] = 0.18;
-                                child.geometry.attributes.color.array[n * 3 + 2] = 0.2;
-                            }
-                        }
-                        
-                        child.geometry.attributes.color.needsUpdate = true;
-                    }
-                }
-            }
-        }
         function updateScene() {
             // let fru = computeFrustumFromCamera(camera);
             // let renderList = getRenderList(fru, node, treeIteration);
@@ -649,7 +597,7 @@ function loadResHisData() {
         max_time_step = dcj_his.length;
         maxIDRHis = dcj_his.dcj_max;
         parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
-        for (let ib = 0; ib < map.buildings.number; ib++) {
+        for (let ib = 0; ib < meta.total_buildings; ib++) {
             building[ib].his = dcj_his.dcj_his[ib];
         }
         console.log('Data loaded successfully.');
@@ -660,11 +608,11 @@ function loadResHisData() {
 }
 
 function initMergedModel( eid ) {
-    building_merge = BlockBuildingMerge( map, dcj, eid, state.IDR_type );
-    scene.add(building_merge);
-    building_merge.layers.enable( 2 );
-    building_merge.frustumCulled = false;
-    building_merge.onAfterRender = function () { scene.remove(building_merge) }
+    // building_merge = BlockBuildingMerge( map, dcj, eid, state.IDR_type );
+    // scene.add(building_merge);
+    // building_merge.layers.enable( 2 );
+    // building_merge.frustumCulled = false;
+    // building_merge.onAfterRender = function () { scene.remove(building_merge) }
 }
 function initWireframe(){
     wf_merge = BlockBuildingWireframe( building_merge );
@@ -676,25 +624,24 @@ function initWireframe(){
     }
 }
 function initExtrudedModel(){
-    building = [];
-    for (let ib = 0; ib < map.buildings.number; ib++) {
-        let floor_height = 3.0
-        building[ib] = new BlockBuildingOld(map, ib, floor_height);
-        // scene.add(building[ib].getMesh(1));
-    }
-    // console.log(building[-1]);
+    // building = [];
+    // for (let ib = 0; ib < meta.total_buildings; ib++) {
+    //     let floor_height = 3.0
+    //     building[ib] = new BlockBuildingOld(map, ib, floor_height);
+    //     // scene.add(building[ib].getMesh(1));
+    // }
 }
 async function update_IDR(){
     NProgress.start();
     try {
         // maximum inter-story drift ratio
-        initMergedModel( state.eq_select );
+        // initMergedModel( state.eq_select );
 
         let file2 = his_list[state.eq_animation];
         dcj_his = jsonLoader(file2, './data/PuTuo/');
         max_time_step = dcj_his.length;
         parent.vm.max_time_step = Math.ceil(dcj_his.length / sample_rate);
-        for (let ib = 0; ib < map.buildings.number; ib++) {
+        for (let ib = 0; ib < meta.total_buildings; ib++) {
             building[ib].his = dcj_his.dcj_his[ib]
         }
     } catch (error) {
@@ -744,7 +691,7 @@ function skyChanged() {
 
 function initLabel() {
     labels = [];
-    for (let ib = 0; ib < map.buildings.number; ib++) {
+    for (let ib = 0; ib < meta.total_buildings; ib++) {
         const div = document.createElement('div');
         div.textContent = 'Building' + ib.toString();
         div.style.backgroundColor = 'transparent';

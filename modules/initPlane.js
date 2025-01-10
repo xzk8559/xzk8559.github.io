@@ -1,8 +1,8 @@
 import * as THREE from './three-r165/build/three.module.js';
 
-export function initPlane(scene, map) {
-    let h = map.mapbounds["maxx"] * 2 + 20;
-    let w = map.mapbounds["maxy"] * 2 + 20;
+export function initPlane(scene, meta) {
+    let h = meta.map_bounds["maxx"] * 2 + 20;
+    let w = meta.map_bounds["maxy"] * 2 + 20;
     let planeGeometry = new THREE.BoxGeometry( h, w, 2 ); 
     let planeMaterial = new THREE.MeshLambertMaterial({color: '#141414'});
     let plane = new THREE.Mesh( planeGeometry, planeMaterial );
