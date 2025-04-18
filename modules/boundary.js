@@ -1,8 +1,8 @@
-import { Line2 } from './three-r165/examples/jsm/lines/Line2.js';
-import { LineMaterial } from './three-r165/examples/jsm/lines/LineMaterial.js';
-import { LineGeometry } from './three-r165/examples/jsm/lines/LineGeometry.js';
+import { Line2 } from './three-r175/examples/jsm/lines/Line2.js';
+import { LineMaterial } from './three-r175/examples/jsm/lines/LineMaterial.js';
+import { LineGeometry } from './three-r175/examples/jsm/lines/LineGeometry.js';
 import { triangulate, exchange0And1 } from './utilsModeling.js';
-import * as THREE from './three-r165/build/three.module.js';
+import * as THREE from './three-r175/build/three.module.js';
 
 const X_OFFSET = 1.0;
 const Z_OFFSET = -10.0;

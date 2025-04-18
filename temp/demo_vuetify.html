@@ -1,0 +1,643 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PuTuo_Demo</title>
+    <!-- <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet"> -->
+    <!-- <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet"> -->
+    <link href="./modules/vuetify.min.css" rel="stylesheet">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/vuetify@3.x/dist/vuetify.min.css" rel="stylesheet"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <style type="text/css">html{overflow-x:hidden;overflow-y:hidden;}</style>
+</head>
+<body>
+<div id="app">
+    <v-app id="inspire">
+        <v-app-bar
+                app
+                clipped-left
+                class="grey darken-4"
+        >
+            <v-row no-gutters>
+                <v-col cols="1" class="d-flex align-center">
+                    <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+                </v-col>
+                <v-col cols="4" class="d-flex align-center">
+                    <v-toolbar-title class="text-md-h6 font-weight-black">Seismic Visualization</v-toolbar-title>
+                </v-col>
+                <v-col cols="7">
+                    <v-tabs class="grey darken-4">
+                        <v-tab @click="renderPage_1">Overview</v-tab>
+                        <v-tab @click="renderPage_2">Attributes</v-tab>
+                        <v-tab @click="renderPage_3">Tools</v-tab>
+                    </v-tabs>
+                </v-col>
+            </v-row>
+        </v-app-bar>
+        <v-navigation-drawer
+            v-model="drawer"
+            color="grey darken-4"
+            app
+            clipped
+            width="400"
+            class="elevation-10"
+        >
+            <v-card 
+                v-if="pageAside === 1" 
+                outlined 
+                tile 
+                flat 
+                class="grey darken-3 fill-height rounded-lg px-3 py-4"
+            >
+                <!-- Header Section -->
+                <v-card-title class="text-md-h6 font-weight-bold text-white pb-2">
+                    <v-icon class="mr-2 text-white" size="24">mdi-view-dashboard</v-icon>
+                    Overview
+                </v-card-title>
+                <v-divider class="mb-3"></v-divider>
+
+                <!-- Overview Statistics Section -->
+                <v-card-text class="py-0">
+                    <v-list density="compact">
+                        <v-list-item>
+                            <v-icon start color="cyan lighten-1">mdi-domain</v-icon>
+                            <v-list-item-title class="text-md-h6 text-white">Number of Buildings</v-list-item-title>
+                            <v-list-item-subtitle class="text-body-2 text-grey lighten-2">
+                                {{ overviewStats.buildingCount }}
+                            </v-list-item-subtitle>
+                        </v-list-item>
+                        <v-list-item>
+                            <v-icon start color="purple lighten-2">mdi-cube-outline</v-icon>
+                            <v-list-item-title class="text-md-h6 text-white">Number of Chunks</v-list-item-title>
+                            <v-list-item-subtitle class="text-body-2 text-grey lighten-2">
+                                {{ overviewStats.chunkCount }}
+                            </v-list-item-subtitle>
+                        </v-list-item>
+                    </v-list>
+                </v-card-text>
+
+                <v-divider class="my-4"></v-divider>
+
+                <!-- Map Bounds Section -->
+                <v-card-title class="text-md-h6 font-weight-bold text-white pb-2">
+                    <v-icon class="mr-2 text-white" size="24">mdi-map-outline</v-icon>
+                    Map Bounds
+                </v-card-title>
+
+                <v-card-text class="pt-0">
+                    <v-row dense class="px-2 my-1">
+                        <v-col cols="6" class="px-2">
+                            <v-text-field
+                                label="X Min"
+                                :value="overviewStats.xMin"
+                                readonly
+                                dense
+                                outlined
+                                class="rounded-lg"
+                                hide-details
+                            ></v-text-field>
+                        </v-col>
+                        <v-col cols="6" class="px-2">
+                            <v-text-field
+                                label="X Max"
+                                :value="overviewStats.xMax"
+                                readonly
+                                dense
+                                outlined
+                                class="rounded-lg"
+                                hide-details
+                            ></v-text-field>
+                        </v-col>
+                        <v-col cols="6" class="px-2 my-1">
+                            <v-text-field
+                                label="Y Min"
+                                :value="overviewStats.yMin"
+                                readonly
+                                dense
+                                outlined
+                                class="rounded-lg"
+                                hide-details
+                            ></v-text-field>
+                        </v-col>
+                        <v-col cols="6" class="px-2 my-1">
+                            <v-text-field
+                                label="Y Max"
+                                :value="overviewStats.yMax"
+                                readonly
+                                dense
+                                outlined
+                                class="rounded-lg"
+                                hide-details
+                            ></v-text-field>
+                        </v-col>
+                    </v-row>
+                </v-card-text>
+            </v-card>
+            <v-card v-if="pageAside === 2" ountlined tile flat class="grey darken-4 mx-auto">
+                <v-row dense>
+                    <v-col cols="12">
+                        <v-expansion-panels multiple v-model="expandedPanels">
+                            <v-expansion-panel class="grey darken-4">
+                                <v-expansion-panel-title class="text-md-subtitle-1">Structures</v-expansion-panel-title>
+                                <v-expansion-panel-text class="pa-0">
+                                    <v-divider></v-divider>
+                                    <v-row justify="space-around">
+                                        <v-col cols="12"><v-card-actions class="px-4 py-6"><v-switch
+                                                v-model="switch_interact"
+                                                :label="`Interactive (double click to select)`"
+                                                dense
+                                                class="pa-0 ma-0"
+                                        ></v-switch></v-card-actions></v-col>
+                                    </v-row>
+                                    <v-data-table
+                                            dense
+                                            :headers="headers"
+                                            :items="buildingAttrs"
+                                            class="grey darken-4"
+                                            :items-per-page="itemsPerPage"
+                                            ountlined tile
+                                            hide-default-footer
+                                            hide-default-header
+                                    ></v-data-table>
+                                </v-expansion-panel-text>
+                            </v-expansion-panel>
+                            <v-expansion-panel class="grey darken-4">
+                                <v-expansion-panel-title class="text-md-subtitle-1">Earthquakes</v-expansion-panel-title>
+                                <v-expansion-panel-text>
+                                    <v-divider></v-divider>
+                                    <v-card flat class="py-4 px-0 grey darken-4">
+                                        <v-card-actions align="center">
+                                            <v-row>
+                                                <v-col cols="12" class="pb-0" >
+                                                    <v-btn @click="loadHisData" dark block small color="primary">Load Time History</v-btn>
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-actions>
+                                    </v-card>
+                                    <v-divider></v-divider>
+                                    <v-card class="pa-4 grey darken-4" flat >
+                                        <v-sparkline
+                                                :fill="false"
+                                                :gradient=['#42b3f4']
+                                                :line-width=1
+                                                :padding=8
+                                                :smooth=0
+                                                :value="eq_his"
+                                                auto-draw
+                                                align="center"
+                                        ></v-sparkline>
+                                    </v-card>
+                                    <v-divider></v-divider>
+                                    <v-card class="py-2 px-0 grey darken-4" flat >
+                                        <v-data-table
+                                                dense
+                                                :headers="headers"
+                                                :items="eqAttrs"
+                                                class="grey darken-4"
+                                                :items-per-page="itemsPerPage"
+                                                ountlined tile
+                                                hide-default-footer
+                                                hide-default-header
+                                        ></v-data-table>
+                                    </v-card>
+                                    <v-divider></v-divider>
+                                    <v-card flat class="py-4 px-0 grey darken-4">
+                                        <v-card-actions align="center">
+                                            <v-row>
+                                                <v-col cols="12" class="pb-0" >
+                                                    <v-btn @click="updateEqTable" dark block small color="primary">Update</v-btn>
+                                                </v-col>
+                                                <v-col cols="6">
+                                                    <v-btn @click="resetCamera" dark block small color="primary">Time-domain</v-btn>
+                                                </v-col>
+                                                <v-col cols="6">
+                                                    <v-btn @click="resetCamera" dark block small color="primary">Freq-domain</v-btn>
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-actions>
+                                    </v-card>
+                                </v-expansion-panel-text>
+                            </v-expansion-panel>
+                        </v-expansion-panels>
+                    </v-col>
+                </v-row>
+            </v-card>
+            <v-card v-if="pageAside === 3" ountlined tile flat class="grey darken-4 mx-auto">
+                <v-row dense>
+                    <v-col cols="12">
+                        <v-expansion-panels v-model="expandedPanels">
+                            <v-expansion-panel class="grey darken-4">
+                                <v-expansion-panel-title class="text-md-subtitle-1">Camera Controller</v-expansion-panel-title>
+                                <v-expansion-panel-text>
+                                    <v-divider></v-divider>
+                                    <v-card-subtitle>Current position:</v-card-subtitle>
+                                    <v-row justify="space-around" dense>
+                                        <v-col cols="6" class="d-flex align-center">
+                                                <span class="display-1 font-weight-light mx-auto">{{ camera_x }}</span>
+                                        </v-col>
+                                        <v-col cols="6" class="d-flex align-center">
+                                                <span class="display-1 font-weight-light mx-auto" v-text="camera_y"></span>
+                                        </v-col>
+                                    </v-row>
+                                    <v-card-subtitle>Change your camera position.</v-card-subtitle>
+                                    <v-row justify="space-around" dense>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="8" class="d-flex align-center">
+                                            <v-slider v-model="slider_x" min="0" max="1000" label="x :" hide-details></v-slider>
+                                        </v-col>
+                                        <v-col cols="2">
+                                            <v-text-field
+                                                    v-model="slider_x"
+                                                    class="mt-0 pt-0"
+                                                    hide-details single-line
+                                                    dense outlined
+                                                    label="number"
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="1"></v-col><v-col cols="1"></v-col>
+                                        <v-col cols="8" class="d-flex align-center">
+                                            <v-slider v-model="slider_y" min="0" max="1000" label="y :" hide-details></v-slider>
+                                        </v-col>
+                                        <v-col cols="2">
+                                            <v-text-field
+                                                    v-model="slider_y"
+                                                    class="mt-0 pt-0"
+                                                    hide-details single-line
+                                                    dense outlined
+                                                    label="number"
+                                            ></v-text-field>
+                                        </v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="12">
+                                            <v-card-actions>
+                                                <v-btn @click="resetCamera" dark block small color="primary">Reset camera</v-btn>
+                                            </v-card-actions>
+                                        </v-col>
+                                    </v-row>
+                                </v-expansion-panel-text>
+                            </v-expansion-panel>
+                            <v-expansion-panel class="grey darken-4">
+                                <v-expansion-panel-title class="text-md-subtitle-1">Animation Controller</v-expansion-panel-title>
+                                <v-expansion-panel-text>
+                                    <v-divider></v-divider>
+                                    <v-card-actions class="py-4 px-4"><v-switch
+                                            v-model="switch_anim"
+                                            :label="`Animation`"
+                                            dense
+                                            class="py-0 px-0"
+                                            @click="switch_aniState"
+                                    ></v-switch></v-card-actions>
+                                    <v-divider></v-divider>
+                                    <v-card-subtitle>Time history: {{ eq_str }}</v-card-subtitle>
+                                    <v-row justify="space-around" dense>
+                                        <v-col cols="12">
+                                            <v-card class="px-4 pb-0 grey darken-4" flat>
+                                                <v-sparkline
+                                                    :fill="false"
+                                                    :gradient=['#42b3f4']
+                                                    :line-width=1
+                                                    :padding=8
+                                                    :smooth=0
+                                                    :value="eq_his"
+                                                    auto-draw
+                                                ></v-sparkline>
+                                            </v-card>
+                                        </v-col>
+                                        <v-col cols="12">
+                                            <v-card class="py-0 px-4 grey darken-4" flat>
+                                                <v-slider v-model="time_step" min="0" :max=max_time_step thumb-label hide-details
+                                                        :disabled="ani_disabled"></v-slider>
+                                            </v-card>
+                                        </v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="3"><v-card-subtitle class="pt-8 pb-0 px-0 mx-0">velocity</v-card-subtitle></v-col>
+                                        <v-col cols="7" class="d-flex align-center pt-8 pb-0 px-0 mx-0">
+                                            <v-slider v-model="slider_vel" min="0.0" max="5.0" step="0.1" thumb-label hide-details
+                                                    :disabled="ani_disabled"></v-slider>
+                                        </v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="3"><v-card-subtitle class="pu-0 px-0 mx-0">amplitude</v-card-subtitle></v-col>
+                                        <v-col cols="7" class="d-flex align-center pu-0 px-0 mx-0">
+                                            <v-slider v-model="slider_amp" min="0" max="10" step="0.1" thumb-label hide-details
+                                                    :disabled="ani_disabled"></v-slider>
+                                        </v-col>
+                                        <v-col cols="1"></v-col>
+                                        <v-col cols="6">
+                                            <v-card-actions class="pb-6">
+                                                <v-btn @click="pauseTimeline" dark block small color="primary"
+                                                    :disabled="ani_disabled">Pause / Start</v-btn>
+                                            </v-card-actions>
+                                        </v-col>
+                                        <v-col cols="6">
+                                            <v-card-actions class="pb-6">
+                                                <v-btn @click="resetTimeControl" dark block small color="primary"
+                                                    :disabled="ani_disabled">Reset Timeline</v-btn>
+                                            </v-card-actions>
+                                        </v-col>
+                                    </v-row>
+                                    <v-divider></v-divider>
+                                    <v-card-subtitle>Activate color / displacement animations:</v-card-subtitle>
+                                    <v-row justify="space-around" dense>
+                                        <v-col cols="6"><v-card-actions class="px-4 py-4"><v-switch
+                                                v-model="switch_col"
+                                                :label="`Color`"
+                                                dense class="pa-0 ma-0"
+                                                :disabled="ani_disabled"
+                                        ></v-switch></v-card-actions></v-col>
+                                        <v-col cols="6"><v-card-actions class="px-4 py-4"><v-switch
+                                                v-model="switch_dis"
+                                                :label="`Displacement`"
+                                                dense class="pa-0 ma-0"
+                                                :disabled="ani_disabled"
+                                        ></v-switch></v-card-actions></v-col>
+                                    </v-row>
+                                </v-expansion-panel-text>
+                            </v-expansion-panel>
+                        </v-expansion-panels>
+                    </v-col>
+                </v-row>
+            </v-card>
+        </v-navigation-drawer>
+        <v-main class="d-flex flex-row">
+            <iframe
+                    id="scene"
+                    frameBorder="0"
+                    src="./iframePage.html"
+                    scrolling="no"
+                    style="height: 100%; width: 100%;"
+            ></iframe>
+        </v-main>
+        <v-footer app class="grey darken-4" elevation="12">
+            <span>&copy; 2021</span>
+        </v-footer>
+    </v-app>
+</div>
+</body>
+<script src="./modules/vue.global.js"></script>
+<script src="./modules/vuetify.min.js"></script>
+<script src="./modules/vuetify-labs.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/vuetify@3.3.3/dist/vuetify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@3.3.3/dist/vuetify-labs.js"></script> -->
+<script type="text/javascript">
+    const { createApp, ref, reactive, watch } = Vue
+    const { createVuetify } = Vuetify
+    
+    // Create vuetify instance with labs components
+    const vuetify = createVuetify({
+        components: {
+            ...Vuetify.components,
+            ...Vuetify.labs,
+        },
+        theme: {
+            defaultTheme: 'dark'
+        }
+    })
+
+    // State variables moved outside Vue instance
+    const xmlhttp = ref(null);
+    const current_attr = ref(null);
+    const history = ref(null);
+    const dcjHisData = ref(null);
+    
+    const cameraControls = reactive({
+        x_set: 0,
+        y_set: 0,
+        isReset: 0
+    });
+
+    const timeControls = reactive({ isReset: 1 });
+    
+    const aniControls = reactive({
+        animation: 0,
+        color: 0,
+        displacement: 0,
+        velocity: 1,
+        amplitude: 1
+    });
+
+    const table_attr = reactive({
+        structure: {
+            needsUpdate: 1,
+            isInteractive: 0,
+            attributes: {
+                bid: {name: 'ID', value: null},
+                county: {name: 'county', value: null},
+                town: {name: 'town', value: null},
+                builtYear: {name: 'year of built', value: null},
+                height: {name: 'height', value: null},
+                floor: {name: 'floor', value: null},
+                coordinate: {name: 'coordinate', value: null},
+                circleNum: {name: 'circle', value: null},
+                floorArea: {name: 'floor area', value: null},
+                buildArea: {name: 'building area', value: null},
+                boundSp: {name: 'bounding sphere radius', value: null},
+                triangles: {name: 'triangles', value: null},
+            }
+        },
+        earthquake: {
+            needsUpdate: 1,
+            attributes: {
+                eid: {name: 'ID', value: null},
+                pga: {name: 'PGA', value: null},
+                duration: {name: 'duration', value: null},
+                cav: {name: 'CAV', value: null}
+            }
+        },
+        response: {
+            history: {
+                needsUpdate: 1
+            }
+        }
+    });
+
+    const app = createApp({
+        setup() {
+            // Data properties as refs
+            const drawer = ref(null);
+            const expandedPanels = ref([0, 1]);
+            const pageAside = ref(1);
+            const show = ref(false);
+            const aside_width = ref("30%");
+            const slider_x = ref(cameraControls.x_set);
+            const slider_y = ref(cameraControls.y_set);
+            const camera_x = ref(0);
+            const camera_y = ref(0);
+            const eq_str = ref('');
+            const eq_his = ref([0, 0, 0, 0, 0, 0, -1, -1, 3, 3, -2.5, -2.5, 1.5, 1.5, -1, -1, 3, 3, -2.5, -2.5, 1.5, 1.5, -1.8, -1.8, 1, 1, -1, -1, 0, 0, 0, 0, 0, 0]);
+            const time_step = ref(0);
+            const max_time_step = ref(120);
+            const switch_anim = ref(aniControls.animation);
+            const switch_col = ref(aniControls.color);
+            const switch_dis = ref(aniControls.displacement);
+            const ani_disabled = ref(true);
+            const switch_interact = ref(table_attr.structure.isInteractive);
+            const slider_vel = ref(1);
+            const slider_vel_backup = ref(1);
+            const ani_paused = ref(false);
+            const slider_amp = ref(1);
+            const itemsPerPage = ref(-1);
+            const headers = ref([
+                {text: 'Attributes', align: 'start', sortable: false, value: 'name',},
+                { text: 'Values', value: 'value', sortable: false }
+            ]);
+            const buildingAttrs = ref([
+                table_attr.structure.attributes.bid,
+                table_attr.structure.attributes.county,
+                table_attr.structure.attributes.town,
+                table_attr.structure.attributes.builtYear,
+                table_attr.structure.attributes.height,
+                table_attr.structure.attributes.floor,
+                table_attr.structure.attributes.coordinate,
+                table_attr.structure.attributes.circleNum,
+                table_attr.structure.attributes.floorArea,
+                table_attr.structure.attributes.buildArea,
+                table_attr.structure.attributes.boundSp,
+                table_attr.structure.attributes.triangles
+            ]);
+            const eqAttrs = ref([
+                table_attr.earthquake.attributes.eid,
+                table_attr.earthquake.attributes.pga,
+                table_attr.earthquake.attributes.duration,
+                table_attr.earthquake.attributes.cav
+            ]);
+
+            const overviewStats = reactive({
+                buildingCount: 156,
+                chunkCount: 24,
+                xMin: -121.45,
+                xMax: -121.32,
+                yMin: 31.12,
+                yMax: 31.25
+            });
+
+            // Methods
+            const renderPage_1 = () => { pageAside.value = 1 };
+            const renderPage_2 = () => { pageAside.value = 2 };
+            const renderPage_3 = () => { pageAside.value = 3 };
+            const resetCamera = () => { cameraControls.isReset = 1 };
+            const resetTimeControl = () => { timeControls.isReset = 1 };
+            const updateEqTable = () => { table_attr.earthquake.needsUpdate = 1 };
+            const loadHisData = () => { table_attr.response.history.needsLoad = 1 };
+            const pauseTimeline = () => { ani_paused.value = !ani_paused.value };
+            const switch_aniState = () => {
+                ani_disabled.value = !ani_disabled.value;
+                ani_paused.value = !ani_disabled.value;
+                switch_col.value = !ani_disabled.value;
+            };
+
+            watch(switch_anim, (newValue) => {
+                const iframe = document.getElementById('scene');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ 
+                        // switch_anim: newValue,
+                        animationEnabled: newValue,
+                        animationSpeed: slider_vel.value,
+                        colorEnabled: switch_col.value,
+                        displacementEnabled: switch_dis.value,
+                    }, '*');
+                }
+            });
+
+            watch([switch_col, switch_dis, slider_vel, slider_amp, ani_paused], () => {
+                const iframe = document.getElementById('scene');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ 
+                        animationEnabled: switch_anim.value,
+                        animationSpeed: slider_vel.value,
+                        colorEnabled: switch_col.value,
+                        displacementEnabled: switch_dis.value,
+                        animationPaused: ani_paused.value,
+                        animationAmplitude: slider_amp.value
+                    }, '*');
+                }
+            });
+
+            return {
+                drawer,
+                expandedPanels,
+                pageAside,
+                show,
+                aside_width,
+                slider_x,
+                slider_y,
+                camera_x,
+                camera_y,
+                eq_str,
+                eq_his,
+                time_step,
+                max_time_step,
+                switch_anim,
+                switch_col,
+                switch_dis,
+                ani_disabled,
+                switch_interact,
+                slider_vel,
+                slider_vel_backup,
+                ani_paused,
+                slider_amp,
+                itemsPerPage,
+                headers,
+                buildingAttrs,
+                eqAttrs,
+                overviewStats,
+                
+                // Methods
+                renderPage_1,
+                renderPage_2,
+                renderPage_3,
+                resetCamera,
+                resetTimeControl,
+                updateEqTable,
+                loadHisData,
+                pauseTimeline,
+                switch_aniState
+            }
+        }
+    })
+    
+    app.mixin({
+        mounted() {
+            window.dispatchEvent(new Event('vue-app-ready'));
+            console.log('Vue app emitted "vue-app-ready" event');
+            
+            window.switch_anim = this.switch_anim;
+            window.overviewStats = this.overviewStats;
+        }
+    });
+
+    app.use(vuetify)
+    app.mount('#app')
+</script>
+
+<script type="text/javascript">
+    function loadXMLDoc(url,cFunc) {
+        if (window.XMLHttpRequest)
+        {// code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp=new XMLHttpRequest();
+        }
+        else
+        {// code for IE6, IE5
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange=cFunc;
+        xmlhttp.open("GET",url,true);
+        xmlhttp.send();
+    }
+
+    function loadTableData(file) {
+        loadXMLDoc(file,function() {
+            if (xmlhttp.readyState===4 && xmlhttp.status===200) {
+                current_attr.value = JSON.parse( xmlhttp.response );
+                table_attr.structure.attributes.county.value = current_attr.value["county"];
+                table_attr.structure.attributes.town.value = current_attr.value["town"];
+                table_attr.structure.attributes.circleNum.value = current_attr.value["circleNum"];
+                table_attr.structure.attributes.builtYear.value = current_attr.value["builtYear"];
+                table_attr.structure.attributes.floorArea.value = current_attr.value["floorArea"].toFixed(2);
+                table_attr.structure.attributes.buildArea.value = current_attr.value["buildArea"].toFixed(2);
+            }
+        });
+    }
+</script>
+</html>

@@ -1,4 +1,4 @@
-import * as THREE from './three-r165/build/three.module.js';
+import * as THREE from './three-r175/build/three.module.js';
 
 export class PlaneTiles {
     constructor(zoom, bounds, meta) {
@@ -43,7 +43,7 @@ export class PlaneTiles {
                 let planeMaterial = new THREE.MeshBasicMaterial({
                     transparent: true, 
                     opacity: 0.525, 
-                    color: '#404040', 
+                    color: '#505050', 
                     // clippingPlanes: [ localPlane1, localPlane2 ], 
                     clippingPlanes: [ localPlane1, localPlane2, localPlane3, localPlane4 ], 
                     clipIntersection: false});

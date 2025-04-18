@@ -1,0 +1,38 @@
+/* Navigation Drawer Custom Styles */
+.v-navigation-drawer.transparent-drawer {
+  background-color: rgba(33, 33, 33, 0.25) !important; /* Dark background with transparency */
+  backdrop-filter: blur(5px); /* Adds a blur effect to the background */
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Ensure the drawer floats over content and doesn't affect layout */
+.v-navigation-drawer.floating-drawer {
+  position: fixed !important;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+/* Remove any background from the scrim */
+.v-overlay__scrim {
+  background-color: transparent !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Make sure mouse events pass through to the Three.js area when needed */
+.v-navigation-drawer.pointer-events-passthrough .v-overlay__scrim {
+  pointer-events: none !important;
+}
+
+/* Ensure the drawer content doesn't block mouse events on the Three.js area */
+.v-navigation-drawer.pointer-events-passthrough {
+  pointer-events: auto;
+}
+
+/* Ensure the drawer doesn't affect the layout of the main content */
+.v-main {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  transition: none !important;
+}

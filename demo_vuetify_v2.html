@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PuTuo_Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+
+    <!-- CDN imports for Vue and Vuetify -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@3.6/dist/vuetify.min.css" rel="stylesheet">
+
+    <!-- Local Styles -->
+    <link href="./components/navigation/NavigationDrawer.css" rel="stylesheet">
+    <link href="./styles/color-legend.css" rel="stylesheet">
+    <link href="./styles/building-labels.css" rel="stylesheet">
+
+    <!-- Force hide scrollbars for a cleaner full-screen look -->
+    <style>
+        html { overflow: hidden; }
+        body { margin: 0; } /* Ensure no default body margin interferes */
+        #app, #inspire, v-main, #scene { height: 100vh; width: 100vw; display: flex; flex-direction: column; } /* Basic layout sizing */
+        #inspire { flex: 1; }
+        v-main { flex: 1; overflow: hidden; } /* Ensure v-main takes remaining space */
+        #scene { flex: 1; border: none; } /* Ensure iframe fills v-main */
+    </style>
+</head>
+<body>
+<div id="app">
+    <v-app id="inspire">
+        <!-- App Bar Component -->
+        <app-bar
+            :drawer="uiState.drawer"
+            @toggle-drawer="uiState.drawer = !uiState.drawer"
+            @render-page="renderPage"
+            @ensure-drawer-open="uiState.drawer = true"
+        ></app-bar>
+
+        <!-- Navigation Drawer Component -->
+        <!-- Note: Still many props, consider state management (Pinia) for larger apps -->
+        <navigation-drawer
+            :drawer="uiState.drawer"
+            @update:drawer="uiState.drawer = $event"
+            :page-aside="uiState.pageAside"
+            :overview-stats="overviewStats"
+            :expanded-panels="uiState.expandedPanels"
+            :headers="tableState.headers"
+            :building-attrs="tableState.buildingAttrs"
+            :eq-attrs="tableState.eqAttrs"
+            :items-per-page="tableState.itemsPerPage"
+            :switch_interact="interactionState.isInteractive"
+            :eq_his="earthquakeState.historyData"
+            :camera_x="cameraState.currentX"
+            :camera_y="cameraState.currentY"
+            :slider_x="cameraState.sliderX"
+            :slider_y="cameraState.sliderY"
+            :switch_anim="animationState.enabled"
+            :switch_col="animationState.colorEnabled"
+            :switch_dis="animationState.displacementEnabled"
+            :ani_disabled="animationState.controlsDisabled"
+            :slider_vel="animationState.velocity"
+            :slider_amp="animationState.amplitude"
+            :time_step="animationState.currentTimeStep"
+            :max_time_step="animationState.maxTimeStep"
+            :eq_str="earthquakeState.displayString"
+            @update:switch_interact="interactionState.isInteractive = $event"
+            @load-his-data="loadHistoryData"
+            @update-eq-table="tableState.earthquake.needsUpdate = true"
+            @reset-camera="cameraState.needsReset = true"
+            @update:slider_x="cameraState.sliderX = $event"
+            @update:slider_y="cameraState.sliderY = $event"
+            @update:switch_anim="animationState.enabled = $event"
+            @switch-ani-state="toggleAnimationControls"
+            @update:time_step="animationState.currentTimeStep = $event"
+            @update:slider_vel="animationState.velocity = $event"
+            @update:slider_amp="animationState.amplitude = $event"
+            @update:switch_col="animationState.colorEnabled = $event"
+            @update:switch_dis="animationState.displacementEnabled = $event"
+            @pause-timeline="animationState.isPaused = !animationState.isPaused"
+            @reset-time-control="animationState.needsReset = true"
+        ></navigation-drawer>
+
+        <!-- Main Content -->
+        <v-main>
+            <iframe
+                id="scene"
+                src="./iframePage.html"
+                style="height: 100%; width: 100%;"
+                frameBorder="0"
+                scrolling="no"
+            ></iframe>
+        </v-main>
+
+        <!-- Footer Component -->
+        <app-footer></app-footer>
+    </v-app>
+</div>
+
+<!-- Import Vue and Vuetify from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@3.6/dist/vuetify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@3.6/dist/vuetify-labs.js"></script>
+
+<!-- Import Custom Components -->
+<script type="module">
+    import Components from './components/index.js';
+
+    const { createApp, ref, reactive, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
+    const { createVuetify } = Vuetify;
+
+    // --- Vuetify Setup ---
+    const vuetify = createVuetify({
+        components: {
+            ...Vuetify.components,
+            ...Vuetify.labs,
+        },
+        theme: {
+            defaultTheme: 'dark'
+        }
+    });
+
+    // --- Vue Application Setup ---
+    const app = createApp({
+        setup() {
+            // --- State Definitions ---
+
+            // UI State
+            const uiState = reactive({
+                drawer: true,
+                expandedPanels: [0, 1], // Default open panels
+                pageAside: 1, // Default page/tab in drawer
+                asideWidth: "30%", // Example, if needed later
+            });
+
+            // Overview Data (Populated from iframe)
+            const overviewStats = reactive({
+                buildingCount: 0,
+                chunkSize: 0,
+                xMin: 0,
+                xMax: 0,
+                yMin: 0,
+                yMax: 0
+            });
+
+            // Camera State
+            const cameraState = reactive({
+                currentX: 0,    // Displayed value from iframe
+                currentY: 0,    // Displayed value from iframe
+                sliderX: 0,     // Control value for iframe
+                sliderY: 0,     // Control value for iframe
+                needsReset: false // Flag to signal iframe
+            });
+
+            // Animation & Time Control State
+            const animationState = reactive({
+                enabled: false,
+                isPaused: false, // Separate from enabled state
+                colorEnabled: false,
+                displacementEnabled: false,
+                controlsDisabled: true, // Initially disabled until animation starts
+                velocity: 1.0,
+                amplitude: 1.0,
+                currentTimeStep: 0.0,
+                maxTimeStep: 120, // Example, might be updated by iframe
+                needsReset: true, // Flag for time control reset
+            });
+
+            // Interaction State
+            const interactionState = reactive({
+                isInteractive: false,
+            });
+
+            // Earthquake Data State
+            const earthquakeState = reactive({
+                displayString: '', // Example: For displaying EQ info
+                // Example placeholder, structure might need adjustment
+                historyData: [0, 0, 0, 0, 0, 0, -1, -1, 3, 3, -2.5, -2.5, 1.5, 1.5, -1, -1, 3, 3, -2.5, -2.5, 1.5, 1.5, -1.8, -1.8, 1, 1, -1, -1, 0, 0, 0, 0, 0, 0],
+            });
+
+            // Table Data and Configuration State
+            const tableState = reactive({
+                itemsPerPage: -1, // Show all items
+                headers: [
+                    { title: 'Attributes', key: 'name', align: 'start', sortable: false }, // Use title/key for Vuetify 3
+                    { title: 'Values', key: 'value', sortable: false }
+                ],
+                // Building attribute structure (used in table)
+                structure: {
+                    needsUpdate: true, // Flag to potentially refresh data
+                    attributes: {
+                        bid: { name: 'ID', value: null },
+                        county: { name: 'county', value: null },
+                        town: { name: 'town', value: null },
+                        builtYear: { name: 'year of built', value: null },
+                        height: { name: 'height', value: null },
+                        floor: { name: 'floor', value: null },
+                        coordinate: { name: 'coordinate', value: null },
+                        circleNum: { name: 'circle', value: null },
+                        floorArea: { name: 'floor area', value: null },
+                        buildArea: { name: 'building area', value: null },
+                        boundSp: { name: 'bounding sphere radius', value: null },
+                        triangles: { name: 'triangles', value: null },
+                    }
+                },
+                // Earthquake attribute structure (used in table)
+                earthquake: {
+                    needsUpdate: true, // Flag to potentially refresh data
+                    attributes: {
+                        eid: { name: 'ID', value: null },
+                        pga: { name: 'PGA', value: null },
+                        duration: { name: 'duration', value: null },
+                        cav: { name: 'CAV', value: null }
+                    }
+                },
+                // Computed arrays for v-data-table
+                get buildingAttrs() {
+                    return Object.values(this.structure.attributes);
+                },
+                get eqAttrs() {
+                    return Object.values(this.earthquake.attributes);
+                }
+            });
+
+             // --- Methods ---
+
+            // Method to switch pages/tabs in the Navigation Drawer
+            const renderPage = (pageNumber) => {
+                console.log('Rendering page:', pageNumber);
+                uiState.drawer = true; // Ensure drawer is open
+                uiState.pageAside = pageNumber;
+            };
+
+            // Method to toggle animation controls enable/disable state
+            const toggleAnimationControls = () => {
+                animationState.controlsDisabled = !animationState.controlsDisabled;
+                // Sync related states when toggling
+                animationState.isPaused = animationState.controlsDisabled; // Pause when disabled
+                animationState.colorEnabled = !animationState.controlsDisabled; // Enable color when controls are enabled
+                // Note: `animationState.enabled` controls the overall animation start/stop
+                // which might be toggled separately via its switch.
+            };
+
+            // Method to fetch building data (replaces legacy loadTableData)
+            const fetchBuildingData = async (fileUrl) => {
+                console.log(`Fetching building data from: ${fileUrl}`);
+                try {
+                    const response = await fetch(fileUrl);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    console.log("Received building data:", data);
+
+                    // Update reactive state directly
+                    const attrs = tableState.structure.attributes;
+                    attrs.county.value = data["county"];
+                    attrs.town.value = data["town"];
+                    attrs.circleNum.value = data["circleNum"];
+                    attrs.builtYear.value = data["builtYear"];
+                    attrs.floorArea.value = data["floorArea"]?.toFixed(2) ?? 'N/A';
+                    attrs.buildArea.value = data["buildArea"]?.toFixed(2) ?? 'N/A';
+                    // ... update other attributes as needed ...
+                    attrs.bid.value = data["bid"]; // Assuming bid is also in the JSON
+
+                    tableState.structure.needsUpdate = false; // Mark as updated
+                } catch (error) {
+                    console.error("Failed to load table data:", error);
+                    // Handle error appropriately, maybe show a message to the user
+                }
+            };
+
+            // Placeholder - triggered by event from drawer, implement actual data loading
+            const loadHistoryData = () => {
+                console.log("Placeholder: Load history data triggered");
+                // Example: Implement actual fetch/update for earthquakeState.historyData
+                // Maybe fetchBuildingData should be called here based on selected building ID?
+                 // If loadHisData was meant to fetch the attribute data:
+                 // fetchBuildingData('./path_to_your_json_file.json'); // Replace with actual path/logic
+            };
+
+            // --- Iframe Communication ---
+            let iframeEl = null;
+            let isIframeReady = false;
+
+            // Function to send messages to the iframe
+            const sendMessageToIframe = (message) => {
+                if (iframeEl && iframeEl.contentWindow && isIframeReady) {
+                    console.log("Parent Sending:", message);
+                    iframeEl.contentWindow.postMessage(message, '*'); // Use targetOrigin in production
+                } else if (iframeEl && iframeEl.contentWindow && !isIframeReady) {
+                    console.warn("Parent tried sending message before iframe reported ready:", message);
+                    // Optionally queue messages or wait. For now, just warns.
+                } else {
+                    console.error('Iframe not found or not accessible.');
+                }
+            };
+
+            // Function to handle messages received FROM the iframe
+            const handleIframeMessage = (event) => {
+                // Basic security check: Validate origin in production
+                // if (event.origin !== 'expected_iframe_origin') return;
+
+                const message = event.data;
+                console.log("Parent Received:", message);
+
+                switch (message.type) {
+                    case 'iframeReady': // Message from iframe indicating it's loaded and ready
+                        isIframeReady = true;
+                        // Send initial state now that iframe is confirmed ready
+                        sendInitialStateToIframe();
+                        break;
+                    case 'overview':
+                        Object.assign(overviewStats, message.data); // Efficiently update reactive object
+                        // Format numbers if needed
+                        overviewStats.xMin = overviewStats.xMin?.toFixed(1);
+                        overviewStats.xMax = overviewStats.xMax?.toFixed(1);
+                        overviewStats.yMin = overviewStats.yMin?.toFixed(1);
+                        overviewStats.yMax = overviewStats.yMax?.toFixed(1);
+                        break;
+                    case 'earthquakeUpdate': // Renamed for clarity
+                        animationState.currentTimeStep = message.data.cur_time_step;
+                        animationState.maxTimeStep = message.data.max_time_step;
+                        break;
+                    case 'cameraUpdate':
+                        cameraState.currentX = message.data.x;
+                        cameraState.currentY = message.data.y;
+                        // Optionally sync slider values if camera moves externally
+                        // cameraState.sliderX = message.data.x;
+                        // cameraState.sliderY = message.data.y;
+                        break;
+                    case 'requestBuildingData': // Iframe requests data for a specific building
+                        if (message.dataFile) {
+                            fetchBuildingData(message.dataFile); // Fetch data based on path provided by iframe
+                        } else {
+                            console.warn('Iframe requested building data without specifying file.');
+                        }
+                        break;
+                    default:
+                        console.warn('Parent: Unknown message type received:', message.type);
+                }
+            };
+
+            // Send initial state and settings to iframe once ready
+            const sendInitialStateToIframe = () => {
+                sendMessageToIframe({
+                    type: 'initialState',
+                    payload: {
+                        animationEnabled: animationState.enabled,
+                        animationSpeed: animationState.velocity,
+                        colorEnabled: animationState.colorEnabled,
+                        displacementEnabled: animationState.displacementEnabled,
+                        interactiveEnabled: interactionState.isInteractive,
+                        curTimeStep: animationState.currentTimeStep, // Send initial time
+                        animationAmplitude: animationState.amplitude,
+                        animationPaused: animationState.isPaused
+                        // Add other initial states if needed
+                    }
+                });
+            };
+
+            // --- Watchers for Iframe Updates ---
+
+            // Watch relevant states and send updates to the iframe
+            watch(
+                [
+                    () => animationState.enabled,
+                    () => animationState.velocity,
+                    () => animationState.colorEnabled,
+                    () => animationState.displacementEnabled,
+                    () => animationState.isPaused,
+                    () => animationState.amplitude,
+                    () => interactionState.isInteractive,
+                    () => animationState.currentTimeStep, // Watch timestep changes from slider
+                ],
+                ([enabled, speed, color, displacement, paused, amplitude, interactive, timeStep],
+                [prevEnabled, _prevSpeed, _prevColor, _prevDisplacement, _prevPaused, _prevAmplitude, _prevInteractive, _prevTimeStep]) => {
+
+                    // Only send update if iframe is ready
+                    if (!isIframeReady) return;
+
+                    const updatePayload = {
+                        animationEnabled: enabled,
+                        animationSpeed: speed,
+                        colorEnabled: color,
+                        displacementEnabled: displacement,
+                        animationPaused: paused,
+                        animationAmplitude: amplitude,
+                        interactiveEnabled: interactive,
+                        // Only send curTimeStep if it changed *here* (e.g., via slider)
+                        // If timestep changes frequently from iframe, updating it back might cause loops.
+                        // Decide if parent *sets* timestep or just *receives* it. Assuming parent can set it:
+                        curTimeStep: timeStep
+                    };
+
+                    // Prevent sending identical messages if only internal calculations triggered watcher
+                    // This needs more sophisticated deep comparison for objects if payload gets complex
+                    // For now, send on any change detected by the watcher
+                    sendMessageToIframe({ type: 'stateUpdate', payload: updatePayload });
+
+                     // Special handling: If animation just got enabled, make sure controls are enabled too
+                    if (enabled && !prevEnabled) {
+                        if (animationState.controlsDisabled) {
+                            toggleAnimationControls(); // Enable controls automatically
+                        }
+                    } else if (!enabled && prevEnabled) {
+                        // Optionally disable/reset controls when animation is turned off
+                        if (!animationState.controlsDisabled) {
+                            toggleAnimationControls();
+                        }
+                    }
+                },
+                { deep: false } // Use deep: true if watching nested properties within reactive objects directly needed
+            );
+
+            // Watch for camera reset flag
+            watch(() => cameraState.needsReset, (needsReset) => {
+                if (needsReset) {
+                    sendMessageToIframe({ type: 'resetCamera' });
+                    cameraState.needsReset = false; // Reset the flag after sending
+                }
+            });
+
+             // Watch for time control reset flag
+            watch(() => animationState.needsReset, (needsReset) => {
+                if (needsReset) {
+                    sendMessageToIframe({ type: 'resetTimeControl' });
+                    // Reset relevant local state as well
+                    animationState.currentTimeStep = 0;
+                    animationState.isPaused = false; // Ensure not paused on reset
+                    // Optionally reset speed/amplitude here too if desired
+                    animationState.needsReset = false; // Reset the flag
+                }
+            });
+
+            // Watch for changes in slider values to update camera target in iframe
+            watch([() => cameraState.sliderX, () => cameraState.sliderY], ([newX, newY]) => {
+                sendMessageToIframe({ type: 'setCameraTarget', payload: { x: newX, y: newY } })
+            });
+
+
+            // --- Lifecycle Hooks ---
+            onMounted(() => {
+                iframeEl = document.getElementById('scene');
+                // Add message listener
+                window.addEventListener('message', handleIframeMessage);
+
+                iframeEl.onload = () => {
+                    console.log("Parent: Iframe onload triggered.");
+                    // It's better to wait for the iframe to send an 'iframeReady' message
+                    // iframeEl.contentWindow.postMessage({ type: 'requestReadyConfirmation' }, '*');
+                };
+                // If iframe is already loaded before onload handler is attached
+                if (iframeEl.contentWindow && iframeEl.contentDocument?.readyState === 'complete') {
+                    console.log("Parent: Iframe detected as already loaded.");
+                    // Still wait for 'iframeReady' message initiated *from* the iframe for safer communication start
+                }
+            }); 
+
+            onBeforeUnmount(() => {
+                // Clean up listener
+                window.removeEventListener('message', handleIframeMessage);
+                iframeEl = null; // Clear reference
+                isIframeReady = false;
+            });
+
+            // --- Return Exposed Data and Methods ---
+            return {
+                // Grouped State Objects
+                uiState,
+                overviewStats,
+                cameraState,
+                animationState,
+                interactionState,
+                earthquakeState,
+                tableState, // Exposing the whole object gives access to computed properties too
+
+                // Methods
+                renderPage,
+                loadHistoryData, // Make available if triggered by template/component
+                toggleAnimationControls, // Make available if needed in template
+                // fetchBuildingData // Typically not called directly from template, but exposed if needed
+            };
+        }
+    });
+
+    // Register custom components
+    app.use(Components);
+
+    // Mount the app
+    app.use(vuetify).mount('#app');
+</script>
+
+</body>
+</html>

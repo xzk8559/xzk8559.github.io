@@ -30808,7 +30808,7 @@ class WebGLRenderer {
 			// support previous signature with position first
 			if ( texture.isTexture !== true ) {
 
-				// @deprecated, r165
+				// @deprecated, r175
 				console.warn( 'WebGLRenderer: copyFramebufferToTexture function signature has changed.' );
 
 				position = arguments[ 0 ] || null;
@@ -30836,7 +30836,7 @@ class WebGLRenderer {
 			// support previous signature with dstPosition first
 			if ( srcTexture.isTexture !== true ) {
 
-				// @deprecated, r165
+				// @deprecated, r175
 				console.warn( 'WebGLRenderer: copyTextureToTexture function signature has changed.' );
 
 				dstPosition = arguments[ 0 ] || null;
@@ -30937,7 +30937,7 @@ class WebGLRenderer {
 			// support previous signature with source box first
 			if ( srcTexture.isTexture !== true ) {
 
-				// @deprecated, r165
+				// @deprecated, r175
 				console.warn( 'WebGLRenderer: copyTextureToTexture3D function signature has changed.' );
 
 				srcRegion = arguments[ 0 ] || null;
@@ -45794,9 +45794,9 @@ class MaterialLoader extends Loader {
 
 class LoaderUtils {
 
-	static decodeText( array ) { // @deprecated, r165
+	static decodeText( array ) { // @deprecated, r175
 
-		console.warn( 'THREE.LoaderUtils: decodeText() has been deprecated with r165 and will be removed with r175. Use TextDecoder instead.' );
+		console.warn( 'THREE.LoaderUtils: decodeText() has been deprecated with r175 and will be removed with r175. Use TextDecoder instead.' );
 
 		if ( typeof TextDecoder !== 'undefined' ) {
 

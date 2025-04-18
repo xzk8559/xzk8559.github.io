@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>上海市青浦区DEMO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <!-- External CSS imports -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@3.6/dist/vuetify.min.css" rel="stylesheet">
+    <!-- Local CSS imports -->
+    <link href="./components/navigation/NavigationDrawer.css" rel="stylesheet">
+    <link href="./styles/color-legend.css" rel="stylesheet">
+    <link href="./styles/building-labels.css" rel="stylesheet">
+    <style type="text/css">
+        html { overflow-x: hidden; overflow-y: hidden; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <v-app id="inspire">
+        <!-- App Bar Component -->
+        <app-bar
+            :drawer="drawer"
+            @toggle-drawer="drawer = !drawer"
+            @render-page="renderPage"
+            @ensure-drawer-open="drawer = true"
+        ></app-bar>
+
+        <!-- Navigation Drawer Component -->
+        <navigation-drawer
+            :drawer="drawer"
+            @update:drawer="drawer = $event"
+            :page-aside="pageAside"
+            :overview-stats="overviewStats"
+            :expanded-panels="expandedPanels"
+            :headers="headers"
+            :building-attrs="buildingAttrs"
+            :eq-attrs="eqAttrs"
+            :items-per-page="itemsPerPage"
+            :switch_interact="switch_interact"
+            :eq_his="eq_his"
+            :camera_x="camera_x"
+            :camera_y="camera_y"
+            :slider_x="slider_x"
+            :slider_y="slider_y"
+            :switch_anim="switch_anim"
+            :ani_disabled="ani_disabled"
+            :slider_vel="slider_vel"
+            :slider_amp="slider_amp"
+            :time_step="time_step"
+            :max_time_step="max_time_step"
+            :eq_str="eq_str"
+            @update:switch_interact="switch_interact = $event"
+            @load-his-data="loadHisData"
+            @update-eq-table="updateEqTable"
+            @reset-camera="resetCamera"
+            @update:slider_x="slider_x = $event"
+            @update:slider_y="slider_y = $event"
+            @update:switch_anim="switch_anim = $event"
+            @switch-ani-state="switch_aniState"
+            @update:time_step="time_step = $event"
+            @update:slider_vel="slider_vel = $event"
+            @update:slider_amp="slider_amp = $event"
+
+            @pause-timeline="pauseTimeline"
+            @reset-time-control="resetTimeControl"
+        ></navigation-drawer>
+
+        <!-- Main Content -->
+        <v-main class="d-flex flex-row">
+            <iframe
+                id="scene"
+                frameBorder="0"
+                src="./iframePage.html"
+                scrolling="no"
+                style="height: 100%; width: 100%;"
+            ></iframe>
+        </v-main>
+
+        <!-- Footer Component -->
+        <app-footer></app-footer>
+    </v-app>
+</div>
+
+<!-- External JS imports -->
+<script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@3.6/dist/vuetify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@3.6/dist/vuetify-labs.js"></script>
+
+<!-- Application script -->
+<script type="module">
+    import Components from './components/index.js';
+
+    const { createApp, ref, reactive, watch, watchEffect, onMounted, onBeforeUnmount } = Vue;
+    const { createVuetify } = Vuetify;
+
+    // Create vuetify instance with labs components
+    const vuetify = createVuetify({
+        components: {
+            ...Vuetify.components,
+            ...Vuetify.labs,
+        },
+        theme: {
+            defaultTheme: 'dark'
+        }
+    });
+
+    const sendMessageToIframe = (data) => {
+        const iframe = document.getElementById('scene');
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(data, '*');
+        }
+    };
+
+    // State variables moved outside Vue instance
+    const xmlhttp = ref(null);
+    const current_attr = ref(null);
+    const history = ref(null);
+    const dcjHisData = ref(null);
+
+    const cameraControls = reactive({
+        x_set: 0,
+        y_set: 0,
+        isReset: false
+    });
+
+    const timeControls = reactive({ isReset: true });
+
+    const aniControls = reactive({
+        animation: false,
+        velocity: 1,
+        amplitude: 1
+    });
+
+    const table_attr = reactive({
+        structure: {
+            needsUpdate: true,
+            isInteractive: false,
+            attributes: {
+                bid: {name: 'ID', value: null},
+                county: {name: 'county', value: null},
+                town: {name: 'town', value: null},
+                builtYear: {name: 'year of built', value: null},
+                height: {name: 'height', value: null},
+                floor: {name: 'floor', value: null},
+                coordinate: {name: 'coordinate', value: null},
+                circleNum: {name: 'circle', value: null},
+                floorArea: {name: 'floor area', value: null},
+                buildArea: {name: 'building area', value: null},
+                boundSp: {name: 'bounding sphere radius', value: null},
+                triangles: {name: 'triangles', value: null},
+            }
+        },
+        earthquake: {
+            needsUpdate: true,
+            attributes: {
+                eid: {name: 'ID', value: null},
+                pga: {name: 'PGA', value: null},
+                duration: {name: 'duration', value: null},
+                cav: {name: 'CAV', value: null}
+            }
+        },
+        response: {
+            history: {
+                needsUpdate: true
+            }
+        }
+    });
+
+    const app = createApp({
+        setup() {
+            // Data properties as refs
+            const drawer = ref(true);
+            const expandedPanels = ref([0, 1]);
+            const pageAside = ref(1);
+            const show = ref(false);
+            const aside_width = ref("30%");
+            const slider_x = ref(cameraControls.x_set);
+            const slider_y = ref(cameraControls.y_set);
+            const camera_x = ref(0);
+            const camera_y = ref(0);
+            const eq_str = ref('');
+            const eq_his = ref([0, 0, 0, 0, 0, 0, -1, 3, -2.5, 1.5, -1, 3, -2.5, 1.5, -1.8, 1, -1, 0, 0, 0, 0, 0, 0]);
+            const time_step = ref(0.);
+            const max_time_step = ref(120);
+            const switch_anim = ref(aniControls.animation);
+            const ani_disabled = ref(true);
+            const switch_interact = ref(false);
+            const slider_vel = ref(1.);
+            const slider_vel_backup = ref(1.);
+            const ani_paused = ref(false);
+            const slider_amp = ref(1);
+            const itemsPerPage = ref(-1);
+            const headers = ref([
+                {key: 'key', align: 'start', sortable: false, title: 'attributes',},
+                {key: 'value', title: 'value'}
+            ]);
+            const buildingAttrs = ref([
+                {key: 'ID', value: 0},
+                {key: '层数', value: 0},
+            ]);
+            const eqAttrs = ref([
+                {key: 'ID', value: 0},
+                {key: 'PGA', value: 0},
+                {key: '持时', value: 0},
+            ]);
+
+            const overviewStats = reactive({
+                buildingCount: 10000,
+                chunkSize: 200,
+                xMin: -121.45,
+                xMax: -121.32,
+                yMin: 31.12,
+                yMax: 31.25
+            });
+
+            // Methods
+            const renderPage = (pageNumber) => {
+                console.log('Rendering page:', pageNumber);
+                // Ensure drawer is open when changing pages
+                if (!drawer.value) {
+                    console.log('Opening drawer from renderPage');
+                    drawer.value = true;
+                }
+                pageAside.value = pageNumber;
+            };
+            const resetCamera = () => {
+                sendMessageToIframe({
+                    type: 'resetCamera',
+                    data: {
+                        x: -600,
+                        y: 150,
+                        height: 600  // 固定高度值
+                    }
+                });
+            };
+            const resetTimeControl = () => { 
+                sendMessageToIframe({
+                    type: 'resetTimeline',
+                    data: {
+                        step: 0
+                    }
+                });
+            };
+            const updateEqTable = () => { table_attr.earthquake.needsUpdate = true };
+            const loadHisData = () => { table_attr.response.history.needsLoad = true };
+            const pauseTimeline = () => { ani_paused.value = !ani_paused.value };
+            const switch_aniState = () => {
+                ani_disabled.value = !ani_disabled.value;
+                ani_paused.value = !ani_disabled.value;
+            };
+
+            watchEffect(() => {
+                sendMessageToIframe({
+                    animationEnabled: switch_anim.value,
+                    animationSpeed: slider_vel.value,
+                    animationPaused: ani_paused.value,
+                    animationAmplitude: slider_amp.value,
+                    interactiveEnabled: switch_interact.value,
+                    curTimeStep: time_step.value
+                })
+            });
+
+            // handle message from iframe
+            const handleMessage = (event) => {
+                const data = event.data.data;
+                switch (event.data.type) {
+                    case 'overview':
+                        overviewStats.buildingCount = data.buildingCount;
+                        overviewStats.chunkSize = data.chunkSize;
+                        overviewStats.xMin = data.xMin.toFixed(1);
+                        overviewStats.xMax = data.xMax.toFixed(1);
+                        overviewStats.yMin = data.yMin.toFixed(1);
+                        overviewStats.yMax = data.yMax.toFixed(1);
+                        break;
+                    case 'building':
+                        buildingAttrs.value = [
+                            {key: 'ID', value: data.bid},
+                            {key: '省市', value: data.county},
+                            {key: '街镇', value: data.town},
+                            {key: '建造年代', value: data.builtYear},
+                            {key: '高度 (m)', value: data.height},
+                            {key: '层数', value: data.storey},
+                            {key: '坐标', value: data.coordinate},
+                            {key: '层面积', value: data.floorArea.toFixed(2)},
+                            {key: '建筑面积', value: data.buildArea.toFixed(2)},
+                            {key: '包围球半径', value: data.radius},
+                            {key: '三角形数', value: data.triangles},
+                        ]
+                        break;
+                    case 'earthquake':
+                        time_step.value = data.cur_time_step;
+                        max_time_step.value = data.max_time_step;
+                        break;
+                    case 'cameraUpdate':
+                        camera_x.value = data.x;
+                        camera_y.value = data.y;
+                        break;
+                    case 'iframeReady':
+                        break;
+                    default:
+                        console.warn('Parent: Unknown message type received:', event.data.type);
+                }
+            };
+
+            onMounted(() => {
+                window.addEventListener('message', handleMessage);
+            });
+            onBeforeUnmount(() => {
+                window.removeEventListener('message', handleMessage);
+            });
+
+            return {
+                drawer,
+                expandedPanels,
+                pageAside,
+                show,
+                aside_width,
+                slider_x,
+                slider_y,
+                camera_x,
+                camera_y,
+                eq_str,
+                eq_his,
+                time_step,
+                max_time_step,
+                switch_anim,
+                ani_disabled,
+                switch_interact,
+                slider_vel,
+                slider_vel_backup,
+                ani_paused,
+                slider_amp,
+                itemsPerPage,
+                headers,
+                buildingAttrs,
+                eqAttrs,
+                overviewStats,
+
+                // Methods
+                renderPage,
+                resetCamera,
+                resetTimeControl,
+                updateEqTable,
+                loadHisData,
+                pauseTimeline,
+                switch_aniState
+            }
+        }
+    });
+
+    // Register custom components
+    app.use(Components);
+
+    app.mixin({
+        mounted() {
+            // 使用nextTick确保DOM已经渲染
+            Vue.nextTick(() => {
+                const iframe = document.getElementById('scene');
+                if (!iframe) {
+                    // console.error('iframe not found');
+                    return;
+                }
+                
+                iframe.onload = () => {
+                    // 向iframe发送消息
+                    iframe.contentWindow.postMessage({
+                        type: 'vue-app-ready',
+                        animationEnabled: this.switch_anim,
+                        animationSpeed: this.slider_vel,
+                        interactiveEnabled: this.switch_interact,
+                        curTimeStep: this.time_step
+                    }, '*');
+                };
+
+                // 如果iframe已经加载完成，直接发送消息
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({
+                        type: 'vue-app-ready',
+                        animationEnabled: this.switch_anim,
+                        animationSpeed: this.slider_vel,
+                        interactiveEnabled: this.switch_interact,
+                        curTimeStep: this.time_step
+                    }, '*');
+                }
+            });
+        }
+    });
+
+    app.use(vuetify).mount('#app');
+</script>
+</html>
+
+
+
+

@@ -1,5 +1,6 @@
-import * as THREE from '../modules/three-r165/build/three.module.js';
+import * as THREE from '../modules/three-r175/build/three.module.js';
 import {createBoundingBox, expandBox3, isBoxIntersectingCameraFrustum} from './utils.js';
+import { BuildingPickingManager } from './BuildingPickingManager.js';
 
 class ChunkManager {
   /**
@@ -9,16 +10,16 @@ class ChunkManager {
    * @param {number} [maxConcurrentLoads=5] - Max concurrent fetches
    * @param {number} [marginIn=50] - Smaller margin for loading
    * @param {number} [marginOut=100] - Larger margin for unloading
-   * @param {number} [cacheLifetime=10000] - Time in ms to keep unloaded chunks in cache (default 10s)
+   * @param {number} [cacheLifetime=30000] - Time in ms to keep unloaded chunks in cache (default 10s)
    */
   constructor(
-    scene, 
-    meta, 
-    createBuildingsFromChunk, 
-    maxConcurrentLoads = 5, 
-    marginIn = 50, 
-    marginOut = 100, 
-    cacheLifetime = 10000
+    scene,
+    meta,
+    createBuildingsFromChunk,
+    maxConcurrentLoads = 5,
+    marginIn = 50,
+    marginOut = 100,
+    cacheLifetime = 30000
   ) {
     // Basic settings
     this.scene = scene;
@@ -48,6 +49,9 @@ class ChunkManager {
     // Throttle chunk updates
     this.lastUpdateTime = 0;
     this.updateInterval = 20; // ms
+
+    // Building picking manager for individual building interaction
+    this.buildingPickingManager = new BuildingPickingManager(scene);
   }
 
   // --------------------------------------
@@ -111,9 +115,10 @@ class ChunkManager {
   /**
    * Put a chunk's mesh into the cache (time-stamped).
    */
-  cacheChunk(chunkKey, mesh) {
+  cacheChunk(chunkKey, mesh, chunkData) {
     this.chunkCache[chunkKey] = {
       mesh,
+      chunkData,
       timestamp: performance.now()
     };
   }
@@ -155,7 +160,7 @@ class ChunkManager {
    */
   async loadChunk(chunkKey) {
     const chunkInfo = this.chunks[chunkKey];
-    
+
     if (chunkInfo.mesh && this.scene.children.includes(chunkInfo.mesh)) {
       // It's already in the scene => no need to reattach or re-fetch
       return;
@@ -178,6 +183,19 @@ class ChunkManager {
         chunkInfo.mesh = cachedMesh;
         chunkInfo.loaded = true;
         this.scene.add(cachedMesh);
+
+        // 添加：为缓存的chunk重新创建picking meshes
+        if (chunkInfo.cachedData) {  // cachedData需要在cacheChunk时保存
+            this.createPickingMeshesForChunk(chunkInfo.cachedData, chunkKey);
+        } else {
+            // 如果没有缓存数据，重新获取
+            const response = await fetch(chunkInfo.url);
+            if (response.ok) {
+                const chunkData = await response.json();
+                this.createPickingMeshesForChunk(chunkData, chunkKey);
+            }
+        }
+
         console.log(`Reattached chunk from cache: ${chunkInfo.url}`);
         return;
       }
@@ -215,15 +233,16 @@ class ChunkManager {
       displacementTex.magFilter = THREE.LinearFilter;
       displacementTex.wrapS = THREE.ClampToEdgeWrapping;
       displacementTex.wrapT = THREE.ClampToEdgeWrapping;
-      // displacementTex.colorSpace = THREE.NoColorSpace;
-      // displacementTex.format = THREE.RedFormat;             // Single-channel
-      // displacementTex.type = THREE.UnsignedShortType;       // 16-bit unsigned integer
+      displacementTex.flipY = false;
       displacementTex.needsUpdate = true;
 
       chunkInfo.loaded = true;
       chunkInfo.buildingCount = chunkData.buildings.number;
       this.scene.add(chunkObject);
-      
+
+      // Create picking meshes for individual buildings in this chunk
+      this.createPickingMeshesForChunk(chunkData, chunkKey);
+
       console.log(`Loaded chunk: ${chunkInfo.url}`);
     } catch (error) {
       console.error('Error loading chunk:', error);
@@ -247,10 +266,12 @@ class ChunkManager {
 
     if (chunkInfo.mesh) {
       this.scene.remove(chunkInfo.mesh);
-      this.cacheChunk(chunkKey, chunkInfo.mesh);
+      this.cacheChunk(chunkKey, chunkInfo.mesh, chunkInfo.cachedData);
       chunkInfo.mesh = null;
     }
 
+    // Remove picking meshes for this chunk
+    this.buildingPickingManager.removeChunkBuildings(chunkKey);
     chunkInfo.loaded = false;
     // chunkInfo.loading = false;
 
@@ -294,9 +315,54 @@ class ChunkManager {
           this.unloadChunk(chunkKey);
         }
     }
-    
+
     // Load all chunks concurrently
     await Promise.all(loadPromises);
+  }
+
+  /**
+   * Create picking meshes for individual buildings in a chunk
+   * @param {Object} chunkData - The chunk data from the server
+   * @param {string} chunkKey - The chunk key
+   */
+  createPickingMeshesForChunk(chunkData, chunkKey) {
+    // Skip if no buildings data
+    if (!chunkData.buildings || !chunkData.buildings.data) {
+      console.warn(`No buildings data for chunk ${chunkKey}`);
+      return;
+    }
+
+    // Calculate floor index offsets for each building
+    // This should match the logic in gpuBuildings.js
+    let runningFloorOffset = 1; // Start at 1 as in gpuBuildings.js
+    const floorOffsets = {};
+
+    // First pass: calculate floor offsets
+    for (const building of chunkData.buildings.data) {
+      if (!building.bid || !building.storey) {
+        console.log('Missing data for building:', building); 
+        continue;
+      };
+
+      const numStorey = Math.max(1, building.storey); // eg. storey=8
+      floorOffsets[building.bid] = {
+        // firstFloor: 0 for all buildings, no need to sample from texture 
+        start: runningFloorOffset, // 10
+        end: runningFloorOffset + numStorey - 1, // 17
+        count: numStorey // 8
+      };
+      runningFloorOffset += numStorey; // 18
+    }
+
+    // Second pass: create picking meshes with floor index information
+    for (const building of chunkData.buildings.data) {
+      // Skip if missing required data
+      if (!building.bid || !building.bounds) { console.log('Missing data for building:', building); continue; }
+
+      // Add picking mesh for this building with floor index information
+      const floorOffset = floorOffsets[building.bid] || null;
+      this.buildingPickingManager.addBuilding(building, chunkKey, floorOffset);
+    }
   }
 }
 

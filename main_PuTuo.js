@@ -1,22 +1,22 @@
 // -----------------------------------------------------Three.js--------------------------------------------------------
-import * as THREE from './modules/three-r165/build/three.module.js';
+import * as THREE from './modules/three-r175/build/three.module.js';
 
-import Stats              from './modules/three-r165/examples/jsm/libs/stats.module.js';
-import {GUI}              from './modules/three-r165/examples/jsm/libs/lil-gui.module.min.js';
-import {GPUStatsPanel}    from './modules/three-r165/examples/jsm/utils/GPUStatsPanel.js';
-import {OrbitControls}    from './modules/three-r165/examples/jsm/controls/OrbitControls.js';
+import Stats              from './modules/three-r175/examples/jsm/libs/stats.module.js';
+import {GUI}              from './modules/three-r175/examples/jsm/libs/lil-gui.module.min.js';
+import {GPUStatsPanel}    from './modules/three-r175/examples/jsm/utils/GPUStatsPanel.js';
+import {OrbitControls}    from './modules/three-r175/examples/jsm/controls/OrbitControls.js';
 
-import {FXAAShader}       from './modules/three-r165/examples/jsm/shaders/FXAAShader.js';
-import {RenderPass}       from './modules/three-r165/examples/jsm/postprocessing/RenderPass.js';
-import {ShaderPass}       from './modules/three-r165/examples/jsm/postprocessing/ShaderPass.js';
-import {OutlinePass}      from './modules/three-r165/examples/jsm/postprocessing/OutlinePass.js';
-import {OutputPass}       from './modules/three-r165/examples/jsm/postprocessing/OutputPass.js';
-import {EffectComposer}   from './modules/three-r165/examples/jsm/postprocessing/EffectComposer.js';
+import {FXAAShader}       from './modules/three-r175/examples/jsm/shaders/FXAAShader.js';
+import {RenderPass}       from './modules/three-r175/examples/jsm/postprocessing/RenderPass.js';
+import {ShaderPass}       from './modules/three-r175/examples/jsm/postprocessing/ShaderPass.js';
+import {OutlinePass}      from './modules/three-r175/examples/jsm/postprocessing/OutlinePass.js';
+import {OutputPass}       from './modules/three-r175/examples/jsm/postprocessing/OutputPass.js';
+import {EffectComposer}   from './modules/three-r175/examples/jsm/postprocessing/EffectComposer.js';
 
-import { OBJExporter } from './modules/three-r165/examples/jsm/exporters/OBJExporter.js';
+import { OBJExporter } from './modules/three-r175/examples/jsm/exporters/OBJExporter.js';
 
-import { Sky } from './modules/three-r165/examples/jsm/objects/Sky.js';
-import { CSS2DRenderer, CSS2DObject } from './modules/three-r165/examples/jsm/renderers/CSS2DRenderer.js';
+import { Sky } from './modules/three-r175/examples/jsm/objects/Sky.js';
+import { CSS2DRenderer, CSS2DObject } from './modules/three-r175/examples/jsm/renderers/CSS2DRenderer.js';
 // ------------------------------------------------------custom---------------------------------------------------------
 import { Lut }                      from './modules/Lut.js';
 import { quadTree }                 from './modules/Quadtree.js';

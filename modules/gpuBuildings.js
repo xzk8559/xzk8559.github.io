@@ -1,7 +1,7 @@
 // file: gpuBuildings.js
 
-import * as THREE from './three-r165/build/three.module.js';
-import { mergeGeometries } from './three-r165/examples/jsm/utils/BufferGeometryUtils.js';
+import * as THREE from './three-r175/build/three.module.js';
+import { mergeGeometries } from './three-r175/examples/jsm/utils/BufferGeometryUtils.js';
 
 import { BlockBuildingChunk } from './blockBuildingChunk.js';
 
@@ -33,20 +33,20 @@ export function createBuildingsFromChunk(chunkData) {
 
     chunkData.buildings.data.forEach((bld, cid) => {
         // cid is the index in this chunk
-        const bid = bld.id; // index across all buildings
+        const bid = bld.bid; // index across all buildings
         const bounds = bld.bounds;
         const storey = bld.storey;
-        const numFloors = Math.max(1, storey);
+        const numStorey = Math.max(1, storey);
         
         let blockGeom = new BlockBuildingChunk(
-            cid, numFloors, bounds,
+            bid, cid, numStorey, bounds,
             3.6, chunkData.coordinate_scale,
             runningFloorOffset, //for floorIndex
         ).getGeo( 1 ); // '1' is for LOD1 extruded model
 
         allGeoms.push(blockGeom);
 
-        runningFloorOffset += numFloors;
+        runningFloorOffset += numStorey;
     });
 
     // Merge them
@@ -90,8 +90,8 @@ function createDisplacementShaderMaterial(sumFloors, timeSteps) {
     // uniform mat4 projectionMatrix;
     uniform sampler2D uDisplacementMap;
 
-    // pass in the current time step from the CPU
     uniform float uTimeStep;   // in [0, T-1]
+    uniform float uAnimate;    // 1.0 if animation is ON, 0.0 if OFF
 
     // sumFloors => used to convert floorIndex to a column x
     uniform float uSumFloors;
@@ -102,31 +102,45 @@ function createDisplacementShaderMaterial(sumFloors, timeSteps) {
     // in vec3 normal;
     in float floorIndex; // which column
     
-    out vec3 vNormal;
+    // out vec3 vNormal;
     out vec3 vColor;
 
     void main() {
-        // coordinate in the texture
-        float x = (floorIndex + 0.5) / uSumFloors;
-        float y = (uTimeStep + 0.5) / uTimeSteps;
+        vec3 displacedPos = position;
+        vec3 displacedCol = color;
 
-        vec4 dispTex = texture(uDisplacementMap, vec2(x, y));
-        float disp = dispTex.r * 2.0 - 1.0; // Normalize from [0,1] -> [-1,1]
-        float k = abs(disp) * 2.0 - 1.0; // [-1,1]
-        float k2 = k * k;
-        float k3 = k * k2;
-        float k4 = k * k3;
+        if (uAnimate > 0.001) {
+            // ---------------------------------------------------------------------
+            // sample the texture
+            // ---------------------------------------------------------------------
+            float x = (floorIndex + 0.5) / (uSumFloors + 1.0);
+            float y = (uTimeStep + 0.5) / uTimeSteps;
+            vec4 dispTex = texture(uDisplacementMap, vec2(x, y));
 
-        // apply displacement
-        vec3 displacedPos = position + vec3(0, 0, disp * 0.5);
+            // ---------------------------------------------------------------------
+            // update displacement
+            // ---------------------------------------------------------------------
+            float disp = dispTex.r * 2.0 - 1.0; // Normalize from [0,1] -> [-1,1]
+            displacedPos += vec3(0, 0, disp * 10.);
 
-        float r = -0.0670 * k4 - 0.2922 * k3 - 0.2918 * k2 + 0.5848 * k + 0.7922;
-        float g =  0.3830 * k4 + 0.0976 * k3 - 0.7843 * k2 - 0.2422 * k + 0.7464;
-        float b =  0.1979 * k4 - 0.0579 * k3 - 0.3181 * k2 + 0.0014 * k + 0.3497;
+            // ---------------------------------------------------------------------
+            // update color
+            // ---------------------------------------------------------------------
+            float colo = dispTex.g * 2.0 - 1.0; // Normalize from [0,1] -> [-1,1]
 
-        vNormal = normal;
-        vColor = vec3(r, g, b);
+            float k = abs(clamp(colo * 3., -1., 1.)) * 2.0 - 1.0; // [-1,1]
+            float k2 = k * k;
+            float k3 = k * k2;
+            float k4 = k * k3;
 
+            float r = -0.0670 * k4 - 0.2922 * k3 - 0.2918 * k2 + 0.5848 * k + 0.7922;
+            float g =  0.3830 * k4 + 0.0976 * k3 - 0.7843 * k2 - 0.2422 * k + 0.7464;
+            float b =  0.1979 * k4 - 0.0579 * k3 - 0.3181 * k2 + 0.0014 * k + 0.3497;
+
+            // vNormal = normal;
+            displacedCol += vec3(r-0.25, g-0.25, b-0.25);
+        }
+        vColor = displacedCol * 1.0;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(displacedPos, 1.0);
     }
     `;
@@ -134,7 +148,7 @@ function createDisplacementShaderMaterial(sumFloors, timeSteps) {
     let fragmentShaderGLSL = `
     precision highp float;
 
-    in vec3 vNormal;
+    // in vec3 vNormal;
     in vec3 vColor;
 
     out vec4 outColor;
@@ -143,8 +157,7 @@ function createDisplacementShaderMaterial(sumFloors, timeSteps) {
         // simple shading
         // float diff = abs(dot(normalize(vNormal), vec3(0.0,1.0,0.0)));
         // vec3 shadedColor = vColor * diff; // Modulate vertex color with lighting
-
-        // gl_FragColor = vec4(shadedColor, 1.0);
+        // outColor = vec4(shadedColor, 1.0);
         
         outColor = vec4(vColor + 0.1, 1.0);
     }
@@ -156,12 +169,12 @@ function createDisplacementShaderMaterial(sumFloors, timeSteps) {
         glslVersion: THREE.GLSL3,
         uniforms: {
             uDisplacementMap: { value: placeholderTex  },
-            uTimeStep: { value: 0 },
+            uTimeStep:  { value: 0 },
             uSumFloors: { value: sumFloors * 1.0 },
             uTimeSteps: { value: timeSteps * 1.0 },
+            uAnimate:   { value: 0.0 },  // default OFF
         }
     });
 
     return material;
 }
-

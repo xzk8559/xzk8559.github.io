@@ -1,0 +1,10 @@
+/* 建筑物标签样式 */
+.building-label {
+  transition: all 0.2s ease;
+  transform-origin: center bottom;
+}
+
+.building-label:hover {
+  transform: scale(1.1);
+  background-color: rgba(0, 120, 255, 0.8) !important;
+}

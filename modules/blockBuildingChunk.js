@@ -1,16 +1,22 @@
-import * as THREE from '../modules/three-r165/build/three.module.js';
+import * as THREE from '../modules/three-r175/build/three.module.js';
 import { triangulate, exchange0And1 } from './utilsModeling.js';
 
 export class BlockBuildingChunk {
-    constructor(cid, storey, bounds, floorHeight=3.6, coordinate_scale=0.1,runningFloorOffset=0) {
+    constructor(bid, cid, storey, bounds, floorHeight=3.6, 
+        coordinate_scale,
+        runningFloorOffset,
+        pickingColor,
+    ) {
+        this.bid = bid;
         this.cid = cid;
-        this.floor = storey + 1;
+        this.floor = storey + 1; // +1 for base floor with 0-displacement
         this.bounds = bounds; // .reverse()
         this.floorHeight = floorHeight;
         this.height = storey * this.floorHeight;
         this.coord_scale = coordinate_scale;
         this.pointCount = this.bounds.length;
         this.runningFloorOffset = runningFloorOffset;
+        this.pickingColor = pickingColor;
     }
 
     getGeo( lod = 1 ) {
@@ -18,10 +24,12 @@ export class BlockBuildingChunk {
         let indices = [];
         let vertices = [];
         let colors = [];
-        let floorIdx = []
+        let floorIdx = [];
         let pN = this.pointCount;
 
+        
         if (lod === 0) {
+            // lod 0: polygon in x-z plane
             for (let i1 = 0; i1 < pN; i1++) {
                 let x = this.bounds[i1][0];
                 let z = this.bounds[i1][1];
@@ -37,7 +45,9 @@ export class BlockBuildingChunk {
                 indices.push(triangles[n]);
             }
         } else if (lod === 1) {
+            // lod 1: extruded model
             for (let i0 = 0; i0 < this.floor + 1; i0++) {
+                // +1 for seperate modeling of roof
                 for (let i1 = 0; i1 < pN; i1++) {
                     let y, colorShift;
                     const [x, z] = this.bounds[i1];
@@ -51,15 +61,21 @@ export class BlockBuildingChunk {
                     vertices.push(x, y, z);
                     colors.push(0.25 + colorShift, 0.25 + colorShift, 0.25 + colorShift);
 
+                    // Note that var "floor" includes a base floor while var "storey" doesn't
+                    // e.g. assume story=8, floor=9, runningFloorOffset=10
+                    // for i0 = 0...9
+                    // push 0, 10, 11, 12, 13, 14, 15, 16, 17, 17
+                    // result in line 0 and 10-17 in texture
                     if (i0 === 0) {
                         floorIdx.push(0);
                     } else if (i0 === this.floor) {
-                        floorIdx.push(this.runningFloorOffset + i0 - 1);
+                        floorIdx.push(this.runningFloorOffset + i0 - 2);
                     } else {
-                        floorIdx.push(this.runningFloorOffset + i0);
+                        floorIdx.push(this.runningFloorOffset + i0 - 1);
                     }
+                    // then next building's runningFloorOffset = 10+story = 18
                 }
-    
+                
                 if (i0 !== this.floor) {
                     let pos;
                     for (let n = 0; n < pN - 1; n++) {
@@ -88,6 +104,9 @@ export class BlockBuildingChunk {
         geometry.setAttribute('floorIndex', new THREE.Float32BufferAttribute(floorIdx, 1));
         geometry.attributes.position.usage = THREE.DynamicDrawUsage;
         geometry.attributes.color.usage = THREE.DynamicDrawUsage;
+
+        // const idArray = new Float32Array(geometry.attributes.position.count).fill(this.bid);
+        // geometry.setAttribute('buildingID', new THREE.BufferAttribute(idArray, 1));
 
         // geometry.computeVertexNormals();
         return geometry;

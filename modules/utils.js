@@ -97,7 +97,7 @@ function calculateLevel(object, camera, distance) {
     }
 }
 
-import * as THREE from '../modules/three-r165/build/three.module.js';
+import * as THREE from '../modules/three-r175/build/three.module.js';
 
 /**
  * Example function to create a bounding box from chunk bounds.

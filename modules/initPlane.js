@@ -1,4 +1,4 @@
-import * as THREE from './three-r165/build/three.module.js';
+import * as THREE from './three-r175/build/three.module.js';
 
 export function initPlane(scene, meta) {
     let h = meta.map_bounds["maxx"] * 2 + 20;

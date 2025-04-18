@@ -1,4 +1,4 @@
-import { Color } from '../modules/three-r165/build/three.module.js';
+import { Color } from '../modules/three-r175/build/three.module.js';
 
 class Lut {
 

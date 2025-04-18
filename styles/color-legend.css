@@ -1,0 +1,32 @@
+.color-legend-container {
+  width: 100%;
+  margin: 8px 0;
+}
+
+.color-legend-bar {
+  display: flex;
+  height: 24px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.color-segment {
+  flex: 1;
+  height: 100%;
+  transition: transform 0.1s ease;
+}
+
+.color-legend-bar:hover .color-segment {
+  transform: scaleY(1.05);
+}
+
+.color-legend-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 0 2px;
+}

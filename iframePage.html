@@ -5,25 +5,60 @@
     <title> PuTuo_Demo </title>
     <meta charset="utf-8">
     <link type="text/css" rel="stylesheet" href="./main.css">
+    <link type="text/css" rel="stylesheet" href="./styles/building-labels.css">
 
     <script type="importmap">
         {
             "imports": {
-                "three": "./modules/three-r165/build/three.module.js"
+                "three": "./modules/three-r175/build/three.module.js"
             }
         }
     </script>
 
     <script src='./modules/nprogress.js'></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel='stylesheet' href='./modules/nprogress.css'/>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
 </head>
 
 <body>
     <div id="WebGL-output"></div>
     <div id="Stats-output"></div>
-    <!-- <script src="main_PuTuo.js" type="module" defer></script> -->
-    <script src="main_Qingpu-v3.js" type="module" defer></script>
+    <script>
+        // Initialize global variables with default values
+        window.vueAppReady = false;
+        window.animationEnabled = false;
+        window.animationSpeed = 1.0;
+        window.interactiveEnabled = false;
+        window.curTimeStep = 0;
+
+        window.onload = () => {
+            window.parent.postMessage({ type: 'iframeReady' }, '*');
+        };
+
+        window.addEventListener('message', (event) => {
+            // 处理来自父窗口的消息
+            if (event.data.type === 'vue-app-ready') {
+                window.vueAppReady = true;
+            }
+            // 更新其他变量
+            if (event.data.animationEnabled !== undefined) {
+                window.animationEnabled = event.data.animationEnabled;
+            }
+            if (event.data.animationSpeed !== undefined) {
+                window.animationSpeed = event.data.animationSpeed;
+            }
+            if (event.data.interactiveEnabled !== undefined) {
+                window.interactiveEnabled = event.data.interactiveEnabled;
+            }
+            if (event.data.curTimeStep !== undefined) {
+                window.curTimeStep = event.data.curTimeStep;
+            }
+        });
+
+    </script>
+    <script src="main_Qingpu-v4.js" type="module" defer></script>
 </body>
 
 </html>
+
+
