@@ -54,7 +54,7 @@ export default {
                     <v-switch
                       :model-value="switch_interact"
                       @update:model-value="$emit('update:switch_interact', $event)"
-                      :label="\`交互 (双击选取)\`"
+                      :label="\`交互 (点击选取)\`"
                       hide-details
                       dense
                       class="pa-0 ma-0"
