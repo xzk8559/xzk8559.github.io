@@ -115,12 +115,12 @@ class ChunkManager {
   /**
    * Put a chunk's mesh into the cache (time-stamped).
    */
-  cacheChunk(chunkKey, mesh, chunkData) {
+  cacheChunk(chunkKey, mesh) {
     this.chunkCache[chunkKey] = {
       mesh,
-      chunkData,
       timestamp: performance.now()
     };
+    this.buildingPickingManager.removeChunkBuildings(chunkKey);
   }
 
   /**
@@ -184,19 +184,14 @@ class ChunkManager {
         chunkInfo.loaded = true;
         this.scene.add(cachedMesh);
 
-        // 添加：为缓存的chunk重新创建picking meshes
-        if (chunkInfo.cachedData) {  // cachedData需要在cacheChunk时保存
-            this.createPickingMeshesForChunk(chunkInfo.cachedData, chunkKey);
-        } else {
-            // 如果没有缓存数据，重新获取
-            const response = await fetch(chunkInfo.url);
-            if (response.ok) {
-                const chunkData = await response.json();
-                this.createPickingMeshesForChunk(chunkData, chunkKey);
-            }
+        // Always fetch the data when reattaching from cache
+        const response = await fetch(chunkInfo.url);
+        if (response.ok) {
+            const chunkData = await response.json();
+            this.createPickingMeshesForChunk(chunkData, chunkKey);
         }
 
-        console.log(`Reattached chunk from cache: ${chunkInfo.url}`);
+        console.log(`Reattached chunk from cache: ${chunkKey}`);
         return;
       }
 
@@ -240,10 +235,10 @@ class ChunkManager {
       chunkInfo.buildingCount = chunkData.buildings.number;
       this.scene.add(chunkObject);
 
-      // Create picking meshes for individual buildings in this chunk
+      // Create picking meshes for buildings in this chunk
       this.createPickingMeshesForChunk(chunkData, chunkKey);
 
-      console.log(`Loaded chunk: ${chunkInfo.url}`);
+      console.log(`Loaded chunk: ${chunkKey}`);
     } catch (error) {
       console.error('Error loading chunk:', error);
     } finally {
@@ -266,7 +261,7 @@ class ChunkManager {
 
     if (chunkInfo.mesh) {
       this.scene.remove(chunkInfo.mesh);
-      this.cacheChunk(chunkKey, chunkInfo.mesh, chunkInfo.cachedData);
+      this.cacheChunk(chunkKey, chunkInfo.mesh);
       chunkInfo.mesh = null;
     }
 
@@ -339,14 +334,14 @@ class ChunkManager {
 
     // First pass: calculate floor offsets
     for (const building of chunkData.buildings.data) {
-      if (!building.bid || !building.storey) {
-        console.log('Missing data for building:', building); 
+      if (!building.storey) {
+        console.log('Missing data for building:', building);
         continue;
       };
 
       const numStorey = Math.max(1, building.storey); // eg. storey=8
       floorOffsets[building.bid] = {
-        // firstFloor: 0 for all buildings, no need to sample from texture 
+        // firstFloor: 0 for all buildings, no need to sample from texture
         start: runningFloorOffset, // 10
         end: runningFloorOffset + numStorey - 1, // 17
         count: numStorey // 8

@@ -26,7 +26,7 @@ let stats, gpuPanel, orbitControls;
 let renderer, scene, camera, raycaster;
 let mouse = new THREE.Vector2(), selectedObject;
 let statsData;
-let eq_his;
+let eq;
 let lut;
 let sky, sun;
 let labelRenderer;
@@ -131,16 +131,17 @@ async function init() {
     async function initData() {
         NProgress.start();
         try {
-            const [metaData, eqHisData] = await Promise.all([
+            const [meta_data, gm_data] = await Promise.all([
                 fetchJSON('./data/Qingpu/', 'meta-Qingpu-20250114.json'),
-                fetchJSON('./data/', 'EQ_history.json'),
+                fetchJSON('./data/Qingpu/', 'ground_motion.json'),
             ]);
 
-            meta = metaData;
+            meta = meta_data;
             // console.log(meta);
 
             // Store the stats data to update the parent window
             statsData = {
+                case: "上海市 青浦区",
                 buildingCount: meta.total_buildings,
                 chunkSize: meta.chunk_size,
                 xMin: meta.map_bounds.minx,
@@ -149,8 +150,20 @@ async function init() {
                 yMax: meta.map_bounds.maxy
             };
 
-            eq_his = eqHisData.eq_his;
-            max_time_step = meta.T;
+            eq = {
+                eid: '-',
+                name: gm_data.name,
+                direction: gm_data.direction,
+                duration: gm_data.T / gm_data.sample_rate,
+                pga: 0.05,
+                acc: gm_data.acc,
+            };
+            setEarthquakeData()
+
+            max_time_step = gm_data.T;
+            if (meta.T !== gm_data.T) {
+                console.warn('The number of earthquakes in the meta data and the GM data does not match.');
+            }
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -213,13 +226,12 @@ async function init() {
     }
     function initCamera() {
         camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 4800);
-        camera.near = 10;    // Increase near plane to avoid Z-Fighting
+        camera.near = 15;    // Increase near plane to avoid Z-Fighting
         camera.far = 5000;   // Decrease far plane to avoid Z-Fighting
-        camera.position.set( -600, 600, 150 );
+        camera.position.set( -400, 800, 300 );
         camera.layers.enable( 0 ); // enabled by default
         camera.layers.enable( 1 );
         camera.layers.enable( 2 );
-        // camera.layers.enable( 3 ); // Enable layer 3 for BuildingPickingManager meshes
 
         raycaster = new THREE.Raycaster();
         raycaster.layers.set( 3 );
@@ -233,13 +245,20 @@ async function init() {
         orbitControls = new OrbitControls(camera, labelRenderer.domElement);
         orbitControls.maxPolarAngle = 0.65 * Math.PI / 2;
         orbitControls.minPolarAngle = 0.01 * Math.PI / 2;
-        orbitControls.target.set( -600, 0, 300 );
+        orbitControls.target.set( -400, 0, 350 );
 
-        orbitControls.enableDamping = false;
+        orbitControls.enableDamping = true;
         orbitControls.dampingFactor = 0.3;
         orbitControls.enableZoom = true;
-        orbitControls.maxDistance = 1000;
+        orbitControls.maxDistance = 2000;
         orbitControls.minDistance = 10;
+
+        // Add a custom event listener to enforce minimum camera height
+        orbitControls.addEventListener('change', function() {
+            if (camera.position.y < 30) {
+                camera.position.y = 30;
+            }
+        });
 
         orbitControls.mouseButtons = {
             LEFT: THREE.MOUSE.PAN,
@@ -249,7 +268,7 @@ async function init() {
 
         // Enable keyboard controls for arrow keys
         orbitControls.listenToKeyEvents(window);
-        orbitControls.keyPanSpeed = 10;
+        orbitControls.keyPanSpeed = 20;
 
         orbitControls.update();
         orbitControls.saveState();
@@ -331,51 +350,62 @@ async function init() {
     function checkIntersection() {
         raycaster.setFromCamera(mouse, camera);
 
-        // Try with layer 3 only
         let intersects = raycaster.intersectObjects(scene.children, true);
-        // console.log('Intersects with layer 3:', intersects);
 
         if (intersects.length > 0) {
             // 找到第一个拾取网格
             let pickingMesh = null;
             for (let i = 0; i < intersects.length; i++) {
-                if (intersects[i].object.userData && intersects[i].object.userData.isPickingMesh) {
-                    pickingMesh = intersects[i].object;
+                if (intersects[i].object.isInstancedMesh &&
+                    intersects[i].instanceId !== undefined) {
+                        pickingMesh = intersects[i];
                     break;
                 }
             }
-            // console.log('Intersects with :', pickingMesh);
 
-            // 如果找到拾取网格并且与当前选中对象不同
-            if (pickingMesh && selectedObject !== pickingMesh) {
-                // 取消之前的选择
-                if (selectedObject) {
-                    selectedObject.visible = true;
+            // 如果找到实例化网格的交叉点
+            if (pickingMesh) {
+                const instanceId = pickingMesh.instanceId;
+
+                // 查找与此实例ID对应的建筑ID
+                let selectedBuildingId = null;
+                let selectedBuildingInfo = null;
+
+                for (const [bid, info] of chunkManager.buildingPickingManager.buildingData.entries()) {
+                    if (info.instanceId === instanceId) {
+                        selectedBuildingId = bid;
+                        selectedBuildingInfo = info;
+                        break;
+                    }
                 }
 
-                // 设置新的选择
-                selectedObject = pickingMesh;
+                // 如果找到建筑信息并且与当前选中对象不同
+                if (selectedBuildingInfo && selectedBuildingId !== selectedObject) {
+                    // 设置新的选择
+                    selectedObject = selectedBuildingId;
 
-                // 创建标签 - 使用 BuildingPickingManager 的标签池
-                if (selectedObject.userData && selectedObject.userData.buildingData) {
-                    const buildingData = selectedObject.userData.buildingData;
-                    const buildingId = buildingData.bid;
-                    const chunkKey = selectedObject.userData.chunkKey;
-                    const floorIndexOffset = selectedObject.userData.floorIndexOffset;
+                    // 获取建筑数据
+                    const buildingData = selectedBuildingInfo.buildingData;
+                    const chunkKey = selectedBuildingInfo.chunkKey;
+                    const floorIndexOffset = selectedBuildingInfo.floorIndexOffset;
 
-                    // 计算标签位置 - 使用对象位置并上移
-                    const position = new THREE.Vector3();
-                    selectedObject.getWorldPosition(position);
+                    // 计算标签位置 - 使用存储的中心点
+                    const position = new THREE.Vector3(
+                        selectedBuildingInfo.center[0],
+                        selectedBuildingInfo.center[1],
+                        selectedBuildingInfo.center[2]
+                    );
 
                     // 计算与相机的距离
                     const distanceToCamera = camera.position.distanceTo(position);
 
                     // 如果距离过远，不显示标签
-                    if (distanceToCamera > 500) {
+                    if (distanceToCamera > 800) {
                         chunkManager.buildingPickingManager.labelPool.remove();
                         return;
                     }
 
+                    // 上移标签位置到建筑顶部
                     if (buildingData.storey) {
                         position.y += buildingData.storey * 0.18; // 上移到建筑顶部
                     } else {
@@ -383,7 +413,7 @@ async function init() {
                     }
 
                     // 创建基本标签
-                    let labelText = `建筑 #${buildingId}`;
+                    let labelText = `建筑 #${buildingData.bid}`;
 
                     // 如果动画启用且有楼层索引信息，计算并显示位移值
                     if (window.animationEnabled && floorIndexOffset) {
@@ -394,14 +424,9 @@ async function init() {
                     chunkManager.buildingPickingManager.labelPool.create(labelText, position);
                 }
             }
-
-            // 如果当前有选中对象且动画正在运行，在动画帧中更新位移值
-            // 这个逻辑会在animate函数中处理，而不是在鼠标移动时
-            // 这样可以避免鼠标移动时的频繁计算
         } else {
             // 没有交叉，清除选择
             if (selectedObject) {
-                selectedObject.visible = true;
                 selectedObject = null;
 
                 // 移除标签
@@ -415,7 +440,7 @@ async function init() {
         event.preventDefault();
         event.stopPropagation();
 
-        if (selectedObject && selectedObject.userData && selectedObject.userData.buildingData) {
+        if (selectedObject) {
             setBuildingData();
         }
     }
@@ -425,6 +450,11 @@ function animate() {
     stats.update();
     orbitControls.update();
 
+    // Ensure camera y-coordinate is at least 30
+    if (camera.position.y < 30) {
+        camera.position.y = 30;
+    }
+
     if (cameraChanged || window.animationEnabled) {
         const now = performance.now();
         if (now - chunkManager.lastUpdateTime > chunkManager.updateInterval) {
@@ -433,21 +463,23 @@ function animate() {
             lastCameraPosition.copy(camera.position);
             lastCameraRotation.copy(camera.rotation);
 
-            // times.update(sample_rate, animationPaused, animationSpeed);
-            // Use window.animationSpeed with a fallback to 1.0 if undefined
-            times.update(sample_rate, false, window.animationSpeed || 1.0);
-            cur_time_step = Math.ceil(times.current_step % max_time_step);
-            // cur_time_step = curTimeStep;
+            if (window.animationEnabled) {
+                // Use window.animationPaused and window.animationSpeed with fallbacks
+                const isPaused = window.animationPaused !== undefined ? window.animationPaused : false;
+                const speed = window.animationSpeed !== undefined ? window.animationSpeed : 1.0;
+                times.update(sample_rate, isPaused, speed);
+                cur_time_step = Math.ceil(times.current_step % max_time_step);
 
-            for (const chunkKey in chunkManager.chunks) {
-                const cInfo = chunkManager.chunks[chunkKey];
-                if (cInfo.loaded && cInfo.mesh) {
-                    // update chunk animation
-                    let mat = cInfo.mesh.material;
-                    if (mat && mat.uniforms && mat.uniforms.uTimeStep) {
-                        mat.uniforms.uTimeStep.value = cur_time_step;
-                        mat.uniforms.uAnimate.value = window.animationEnabled || false;
-                        // mat.uniforms.uAmplitude.value = animationAmplitude;
+                for (const chunkKey in chunkManager.chunks) {
+                    const cInfo = chunkManager.chunks[chunkKey];
+                    if (cInfo.loaded && cInfo.mesh) {
+                        // update chunk animation
+                        let mat = cInfo.mesh.material;
+                        if (mat && mat.uniforms && mat.uniforms.uTimeStep) {
+                            mat.uniforms.uTimeStep.value = cur_time_step;
+                            mat.uniforms.uAnimate.value = window.animationEnabled || false;
+                            // mat.uniforms.uAmplitude.value = animationAmplitude;
+                        }
                     }
                 }
             }
@@ -501,7 +533,7 @@ function animate() {
 // 上次更新选中建筑信息的时间
 let lastBuildingInfoUpdateTime = 0;
 // 更新间隔（毫秒）
-const BUILDING_INFO_UPDATE_INTERVAL = 100; // 100ms
+const BUILDING_INFO_UPDATE_INTERVAL = 200; // ms
 
 /**
  * 更新选中建筑的位移值显示
@@ -527,16 +559,20 @@ function updateSelectedBuildingInfo() {
     // 更新最后计算时间
     lastBuildingInfoUpdateTime = now;
 
-    // 更新选中建筑的位移值
-    if (selectedObject.userData && selectedObject.userData.buildingData) {
-        const buildingData = selectedObject.userData.buildingData;
+    // 获取选中建筑的数据
+    const buildingInfo = chunkManager.buildingPickingManager.getBuildingData(selectedObject);
+    if (buildingInfo) {
+        const buildingData = buildingInfo.buildingData;
         const buildingId = buildingData.bid;
-        const chunkKey = selectedObject.userData.chunkKey;
-        const floorIndexOffset = selectedObject.userData.floorIndexOffset;
+        const chunkKey = buildingInfo.chunkKey;
+        const floorIndexOffset = buildingInfo.floorIndexOffset;
 
-        // 计算标签位置 - 使用对象位置并上移
-        const position = new THREE.Vector3();
-        selectedObject.getWorldPosition(position);
+        // 计算标签位置 - 使用存储的中心点
+        const position = new THREE.Vector3(
+            buildingInfo.center[0],
+            buildingInfo.center[1],
+            buildingInfo.center[2]
+        );
 
         // 计算与相机的距离
         const distanceToCamera = camera.position.distanceTo(position);
@@ -588,21 +624,27 @@ function addDisplacementInfoToLabel(chunkManager, chunkKey, floorIndexOffset, cu
     return labelText;
 }
 
-function resetAnimation() {
-    times.last_step = 0;
-}
-
 async function setBuildingData() {
     // console.log('Setting building info ...');
-    const data = selectedObject.userData.buildingData;
+    // Get building info from the BuildingPickingManager
+    const buildingInfo = chunkManager.buildingPickingManager.getBuildingData(selectedObject);
+    if (!buildingInfo) return;
 
-    let position = new THREE.Vector3();
-    selectedObject.getWorldPosition(position);
+    const data = buildingInfo.buildingData;
+
+    // Get position from stored center
+    const position = new THREE.Vector3(
+        buildingInfo.center[0],
+        buildingInfo.center[1],
+        buildingInfo.center[2]
+    );
+
     let coordinate = `(${position.x.toFixed(1)}, ${position.z.toFixed(1)})`;
 
-    const geo = selectedObject.geometry;
-    let radius = geo.boundingSphere.radius.toFixed(2);
-    let triangles = geo.attributes.position.count / 3;
+    // Calculate approximate values for radius and triangles
+    // For InstancedMesh, we don't have individual geometries, so we estimate
+    const dimensions = buildingInfo.dimensions;
+    const radius = Math.sqrt(dimensions.width * dimensions.width + dimensions.depth * dimensions.depth) / 2;
 
     window.parent.postMessage({
         type: 'building',
@@ -611,37 +653,24 @@ async function setBuildingData() {
             center: data.center,
             storey: data.storey,
             height: (data.storey*3.6).toFixed(1),
-            county: 'Sample County',
-            town: 'Sample Town',
+            county: '上海市',
+            town: '-',
+            address: '-',
             circleNum: 1,
-            builtYear: 2020,
-            floorArea: 100.0,
-            buildArea: 80.0,
+            builtYear: -1,
+            floorArea: 0.0,
+            buildArea: 0.0,
             coordinate: coordinate,
-            radius: radius,
-            triangles: triangles,
+            radius: radius.toFixed(2),
         },
     }, '*');
 }
 
-function updateEqTable() {
-//     let n = Math.round( state.eq_select );
-
-//     // Update eq_his in parent window if available
-//     if (window.parent && window.parent.app) {
-//         window.parent.app.eq_his = eq_his[n];
-//     }
-
-//     // Update earthquake table attributes if available
-//     if (window.parent && window.parent.table_attr && window.parent.table_attr.earthquake) {
-//         const eqAttrs = window.parent.table_attr.earthquake.attributes;
-//         if (eqAttrs) {
-//             if (eqAttrs.eid) eqAttrs.eid.value = 'KiNet-EW-'+ n.toString();
-//             if (eqAttrs.pga) eqAttrs.pga.value = 0.4;
-//             if (eqAttrs.duration) eqAttrs.duration.value = 120.0;
-//             if (eqAttrs.cav) eqAttrs.cav.value = '-';
-//         }
-//     }
+async function setEarthquakeData() {
+    window.parent.postMessage({
+        type: 'earthquake',
+        data: eq,
+    }, '*');
 }
 
 function updateParentPage(){
@@ -658,7 +687,7 @@ function updateParentPage(){
         }, '*');
 
         window.parent.postMessage({
-            type: 'earthquake',
+            type: 'time',
             data: {
                 cur_time_step: cur_time_step,
                 max_time_step: max_time_step,
@@ -672,35 +701,6 @@ function updateParentPage(){
                 y: camera.position.z.toFixed(1),
             }
         }, '*');
-
-        // --------------------------------------------------------------------
-        // --------------------------------------------------------------------
-        // --------------------------------------------------------------------
-        // --------------------------------------------------------------------
-        // --------------------------------------------------------------------
-
-        // Check for time control reset request
-        if (window.parent.timeControls && window.parent.timeControls.isReset === 1){
-            resetAnimation();
-            window.parent.timeControls.isReset = 0;
-        }
-
-        // Check for earthquake table update request
-        if (window.parent.table_attr &&
-            window.parent.table_attr.earthquake &&
-            window.parent.table_attr.earthquake.needsUpdate === 1){
-            updateEqTable();
-            window.parent.table_attr.earthquake.needsUpdate = 0;
-        }
-
-        // Check for response history load request
-        if (window.parent.table_attr &&
-            window.parent.table_attr.response &&
-            window.parent.table_attr.response.history &&
-            window.parent.table_attr.response.history.needsLoad === 1){
-            // loadResHisData();
-            window.parent.table_attr.response.history.needsLoad = 0;
-        }
     } catch (error) {
         console.warn('Error updating parent page:', error);
     }
@@ -766,11 +766,11 @@ window.addEventListener('message', function(event) {
         const direction = new THREE.Vector3();
         camera.getWorldDirection(direction);
 
-        // 设置相机位置
-        camera.position.set(x, height, y);
+        // 设置相机位置，确保y坐标不低于100
+        camera.position.set(x, Math.max(height, 30), y);
 
         // 更新轨道控制器目标点
-        orbitControls.target.set( -600, 0, 300 );
+        orbitControls.target.set( -400, 0, 350 );
         orbitControls.update();
     } else if (event.data.type === 'resetTimeline') {
         times.last_step = event.data.data.step;
@@ -780,5 +780,8 @@ window.addEventListener('message', function(event) {
             chunkManager.buildingPickingManager.labelPool.remove();
             selectedObject = null; // 清除选中对象
         }
+    } else if (event.data.type === 'resetAnimation') {
+        // 重置动画
+        times.last_step = 0;
     }
 });

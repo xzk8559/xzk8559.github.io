@@ -29,6 +29,7 @@
         window.animationEnabled = false;
         window.animationSpeed = 1.0;
         window.interactiveEnabled = false;
+        window.animationPaused = false;
         window.curTimeStep = 0;
 
         window.onload = () => {
@@ -46,6 +47,9 @@
             }
             if (event.data.animationSpeed !== undefined) {
                 window.animationSpeed = event.data.animationSpeed;
+            }
+            if (event.data.animationPaused !== undefined) {
+                window.animationPaused = event.data.animationPaused;
             }
             if (event.data.interactiveEnabled !== undefined) {
                 window.interactiveEnabled = event.data.interactiveEnabled;

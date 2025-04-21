@@ -86,6 +86,10 @@ export default {
     eq_str: {
       type: String,
       required: true
+    },
+    ani_paused: {
+      type: Boolean,
+      required: true
     }
   },
   emits: [
@@ -110,7 +114,7 @@ export default {
       @update:model-value="$emit('update:drawer', $event)"
       app
       overlay-opacity="0"
-      width="450"
+      width="600"
       class="transparent-drawer floating-drawer"
     >
       <div>
@@ -120,10 +124,18 @@ export default {
           :overview-stats="overviewStats"
           :switch_anim="switch_anim"
           :ani_disabled="ani_disabled"
+          :switch_interact="switch_interact"
+          :eq_his="eq_his"
+          :eqAttrs="eqAttrs"
+          :headers="headers"
+          :itemsPerPage="itemsPerPage"
           @reset-camera="$emit('reset-camera')"
           @update:switch_anim="$emit('update:switch_anim', $event)"
           @switch-ani-state="$emit('switch-ani-state')"
           @reset-time-control="$emit('reset-time-control')"
+          @load-his-data="$emit('load-his-data')"
+          @update-eq-table="$emit('update-eq-table')"
+          @update:switch_interact="$emit('update:switch_interact', $event)"
         ></overview-panel>
 
         <!-- Attributes Panel -->
@@ -132,13 +144,9 @@ export default {
           :expanded-panels="expandedPanels"
           :headers="headers"
           :building-attrs="buildingAttrs"
-          :eq-attrs="eqAttrs"
           :items-per-page="itemsPerPage"
           :switch_interact="switch_interact"
-          :eq_his="eq_his"
           @update:switch_interact="$emit('update:switch_interact', $event)"
-          @load-his-data="$emit('load-his-data')"
-          @update-eq-table="$emit('update-eq-table')"
           @reset-camera="$emit('reset-camera')"
         ></attributes-panel>
 
@@ -158,6 +166,8 @@ export default {
           :max_time_step="max_time_step"
           :eq_str="eq_str"
           :eq_his="eq_his"
+          :ani_paused="ani_paused"
+          :overview-stats="overviewStats"
           @update:slider_x="$emit('update:slider_x', $event)"
           @update:slider_y="$emit('update:slider_y', $event)"
           @reset-camera="$emit('reset-camera')"

@@ -50,14 +50,13 @@
             :time_step="time_step"
             :max_time_step="max_time_step"
             :eq_str="eq_str"
+            :ani_paused="ani_paused"
             @update:switch_interact="switch_interact = $event"
-            @load-his-data="loadHisData"
-            @update-eq-table="updateEqTable"
             @reset-camera="resetCamera"
             @update:slider_x="slider_x = $event"
             @update:slider_y="slider_y = $event"
             @update:switch_anim="switch_anim = $event"
-            @switch-ani-state="switch_aniState"
+            @switch-ani-state="switchAniState"
             @update:time_step="time_step = $event"
             @update:slider_vel="slider_vel = $event"
             @update:slider_amp="slider_amp = $event"
@@ -112,19 +111,10 @@
         }
     };
 
-    // State variables moved outside Vue instance
-    const xmlhttp = ref(null);
-    const current_attr = ref(null);
-    const history = ref(null);
-    const dcjHisData = ref(null);
-
     const cameraControls = reactive({
-        x_set: 0,
-        y_set: 0,
-        isReset: false
+        x_set: -400,
+        y_set: 300,
     });
-
-    const timeControls = reactive({ isReset: true });
 
     const aniControls = reactive({
         animation: false,
@@ -134,7 +124,6 @@
 
     const table_attr = reactive({
         structure: {
-            needsUpdate: true,
             isInteractive: false,
             attributes: {
                 bid: {name: 'ID', value: null},
@@ -152,7 +141,6 @@
             }
         },
         earthquake: {
-            needsUpdate: true,
             attributes: {
                 eid: {name: 'ID', value: null},
                 pga: {name: 'PGA', value: null},
@@ -160,11 +148,6 @@
                 cav: {name: 'CAV', value: null}
             }
         },
-        response: {
-            history: {
-                needsUpdate: true
-            }
-        }
     });
 
     const app = createApp({
@@ -187,7 +170,6 @@
             const ani_disabled = ref(true);
             const switch_interact = ref(false);
             const slider_vel = ref(1.);
-            const slider_vel_backup = ref(1.);
             const ani_paused = ref(false);
             const slider_amp = ref(1);
             const itemsPerPage = ref(-1);
@@ -206,6 +188,7 @@
             ]);
 
             const overviewStats = reactive({
+                case: "-",
                 buildingCount: 10000,
                 chunkSize: 200,
                 xMin: -121.45,
@@ -228,13 +211,13 @@
                 sendMessageToIframe({
                     type: 'resetCamera',
                     data: {
-                        x: -600,
-                        y: 150,
-                        height: 600  // 固定高度值
+                        x: -400,
+                        y: 300,
+                        height: 800  // 固定高度值
                     }
                 });
             };
-            const resetTimeControl = () => { 
+            const resetTimeControl = () => {
                 sendMessageToIframe({
                     type: 'resetTimeline',
                     data: {
@@ -242,12 +225,15 @@
                     }
                 });
             };
-            const updateEqTable = () => { table_attr.earthquake.needsUpdate = true };
-            const loadHisData = () => { table_attr.response.history.needsLoad = true };
             const pauseTimeline = () => { ani_paused.value = !ani_paused.value };
-            const switch_aniState = () => {
+            const switchAniState = () => {
                 ani_disabled.value = !ani_disabled.value;
                 ani_paused.value = !ani_disabled.value;
+
+                // If animation is now enabled (not disabled), ensure it's not paused
+                if (!ani_disabled.value) {
+                    ani_paused.value = false;
+                }
             };
 
             watchEffect(() => {
@@ -266,6 +252,7 @@
                 const data = event.data.data;
                 switch (event.data.type) {
                     case 'overview':
+                        overviewStats.case = data.case;
                         overviewStats.buildingCount = data.buildingCount;
                         overviewStats.chunkSize = data.chunkSize;
                         overviewStats.xMin = data.xMin.toFixed(1);
@@ -278,17 +265,25 @@
                             {key: 'ID', value: data.bid},
                             {key: '省市', value: data.county},
                             {key: '街镇', value: data.town},
+                            {key: '地址', value: data.address},
                             {key: '建造年代', value: data.builtYear},
                             {key: '高度 (m)', value: data.height},
                             {key: '层数', value: data.storey},
                             {key: '坐标', value: data.coordinate},
                             {key: '层面积', value: data.floorArea.toFixed(2)},
                             {key: '建筑面积', value: data.buildArea.toFixed(2)},
-                            {key: '包围球半径', value: data.radius},
-                            {key: '三角形数', value: data.triangles},
                         ]
                         break;
                     case 'earthquake':
+                        eq_his.value = data.acc;
+                        eqAttrs.value = [
+                            {key: 'ID', value: data.eid},
+                            {key: '事件', value: data.name},
+                            {key: '持时 (s)', value: data.duration.toFixed(2)},
+                            {key: 'PGA (g)', value: data.pga.toFixed(2)},
+                        ]
+                        break;
+                    case 'time':
                         time_step.value = data.cur_time_step;
                         max_time_step.value = data.max_time_step;
                         break;
@@ -328,7 +323,6 @@
                 ani_disabled,
                 switch_interact,
                 slider_vel,
-                slider_vel_backup,
                 ani_paused,
                 slider_amp,
                 itemsPerPage,
@@ -341,10 +335,8 @@
                 renderPage,
                 resetCamera,
                 resetTimeControl,
-                updateEqTable,
-                loadHisData,
                 pauseTimeline,
-                switch_aniState
+                switchAniState
             }
         }
     });
@@ -361,7 +353,7 @@
                     // console.error('iframe not found');
                     return;
                 }
-                
+
                 iframe.onload = () => {
                     // 向iframe发送消息
                     iframe.contentWindow.postMessage({
