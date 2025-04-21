@@ -352,7 +352,7 @@ class ChunkManager {
     // Second pass: create picking meshes with floor index information
     for (const building of chunkData.buildings.data) {
       // Skip if missing required data
-      if (!building.bid || !building.bounds) { console.log('Missing data for building:', building); continue; }
+      if (!building.bounds) { console.log('Missing data for building:', building); continue; }
 
       // Add picking mesh for this building with floor index information
       const floorOffset = floorOffsets[building.bid] || null;
