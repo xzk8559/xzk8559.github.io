@@ -38,7 +38,7 @@ export default {
           <v-card class="grey darken-4 rounded-lg my-3 pa-0" style="overflow: hidden; border-radius: 16px;" elevation="2">
             <v-card-title
               class="d-flex align-center py-3 px-3"
-              style="cursor: pointer; background-color: rgba(30, 30, 30, 0.6);"
+              style="cursor: pointer; background-color: rgba(50, 50, 50);"
               @click="structuresExpanded = !structuresExpanded"
             >
               <v-icon class="mr-2 text-primary" size="24">mdi-domain</v-icon>
@@ -61,7 +61,7 @@ export default {
                     ></v-switch>
                   </v-card-actions>
                 </v-col>
-                <v-col cols="12">
+                <v-col cols="12" v-if="switch_interact">
                   <v-data-table
                     :headers="headers"
                     :items="buildingAttrs"
@@ -71,6 +71,11 @@ export default {
                     hide-default-footer
                     hide-default-header
                   ></v-data-table>
+                </v-col>
+                <v-col cols="12" v-else>
+                  <div class="text-center pa-4 text-caption text-grey">
+                    开启交互功能以查看建筑详情
+                  </div>
                 </v-col>
               </v-card-text>
             </v-expand-transition>

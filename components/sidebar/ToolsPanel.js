@@ -3,7 +3,7 @@ export default {
   name: 'ToolsPanel',
   data() {
     return {
-      cameraExpanded: true,
+      cameraExpanded: false,
       animationExpanded: true
     };
   },
@@ -94,7 +94,7 @@ export default {
           <v-card class="grey darken-4 rounded-lg my-3 pa-0" style="overflow: hidden; border-radius: 16px;" elevation="2">
             <v-card-title
               class="d-flex align-center py-3 px-3"
-              style="cursor: pointer; background-color: rgba(30, 30, 30, 0.6);"
+              style="cursor: pointer; background-color: rgba(50, 50, 50);"
               @click="animationExpanded = !animationExpanded"
             >
               <v-icon class="mr-2 text-primary" size="24">mdi-animation-play</v-icon>
@@ -105,14 +105,14 @@ export default {
             <v-divider></v-divider>
             <v-expand-transition>
               <v-card-text v-show="animationExpanded" class="pa-2">
-                <v-card class="pa-3 grey darken-4 rounded-lg my-2" flat style="background-color: rgba(30, 30, 30, 0.4);">
-                  <v-card-actions class="py-2 px-2">
+                <v-card class="grey darken-4 rounded-lg" flat style="background-color: rgba(30, 30, 30, 0.4);">
+                  <v-card-actions class="px-2">
                     <v-switch
                       :model-value="switch_anim"
                       @update:model-value="$emit('update:switch_anim', $event); $emit('switch-ani-state')"
                       :label="\`动画\`"
                       dense
-                      class="py-0 px-0"
+                      class="pl-4"
                     ></v-switch>
                   </v-card-actions>
                 </v-card>
@@ -124,7 +124,7 @@ export default {
                         <v-sparkline
                         :fill="false"
                         :gradient="['#42b3f4']"
-                        :line-width=1
+                        line-width=.5
                         :padding=8
                         :smooth="false"
                         :model-value="eq_his"
@@ -222,7 +222,7 @@ export default {
           <v-card class="grey darken-4 rounded-lg my-3 pa-0" style="overflow: hidden; border-radius: 16px;" elevation="2">
             <v-card-title
               class="d-flex align-center py-3 px-3"
-              style="cursor: pointer; background-color: rgba(30, 30, 30, 0.6);"
+              style="cursor: pointer; background-color: rgba(50, 50, 50);"
               @click="cameraExpanded = !cameraExpanded"
             >
               <v-icon class="mr-2 text-primary" size="24">mdi-camera-control</v-icon>

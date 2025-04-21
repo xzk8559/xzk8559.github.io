@@ -67,7 +67,7 @@ export default {
         <v-col cols="12">
           <!-- Header Section -->
           <v-card class="grey darken-4 rounded-lg my-3 pa-0" style="overflow: hidden; border-radius: 16px;" elevation="2">
-            <v-card-title class="d-flex align-center py-3 px-3" style="background-color: rgba(30, 30, 30, 0.6);">
+            <v-card-title class="d-flex align-center py-3 px-3" style="background-color: rgb(50, 50, 50);">
               <v-icon class="mr-2 text-primary" size="24">mdi-view-dashboard</v-icon>
               <span class="text-h7 font-weight-bold text-white">概览</span>
             </v-card-title>
@@ -75,16 +75,33 @@ export default {
 
             <!-- Overview Statistics Section -->
             <v-card-text class="py-1 px-2 rounded-lg" style="background-color: rgba(30, 30, 30, 0.4);">
-              <v-row dense align="center" class="px-4">
-                <v-select
-                  label="选择区域"
-                  :items="['上海市 青浦区']"
-                  dense
-                  hide-details
-                  class="mb-3"
-                  color="primary"
-                  bg-color="rgba(30, 30, 30, 0.6)"
-                ></v-select>
+              <v-row dense align="center" class="px-4 pt-4">
+                <v-col cols="9" class="pr-1">
+                  <v-select
+                    label="选择区域"
+                    :items="['上海市 青浦区']"
+                    single-line
+                    hide-details
+                    variant="outlined"
+                    density="compact"
+                    class="mb-3"
+                    color="primary"
+                    bg-color="rgba(30, 30, 30, 0.6)"
+                  ></v-select>
+                </v-col>
+                <v-col cols="1"></v-col>
+                <v-col cols="2" class="pr-1">
+                  <v-btn
+                    variant="tonal"
+                    @click="$emit('load-his-data')"
+                    block
+                    small
+                    class="text-white rounded-lg mb-3"
+                  >
+                    <v-icon left size="18">mdi-download</v-icon>
+                    载入
+                  </v-btn>
+                </v-col>
               </v-row>
               <v-row dense align="center" class="my-1">
                 <v-col cols="2" class="py-1 d-flex justify-center">
@@ -122,8 +139,6 @@ export default {
                 </v-col>
               </v-row>
             </v-card-text>
-
-            <v-divider class="my-2"></v-divider>
           </v-card>
 
           <!-- Spacer -->
@@ -133,7 +148,7 @@ export default {
           <v-card class="grey darken-4 rounded-lg my-3 pa-0" style="overflow: hidden; border-radius: 16px;" elevation="2">
             <v-card-title
               class="d-flex align-center py-3 px-3"
-              style="cursor: pointer; background-color: rgba(30, 30, 30, 0.6);"
+              style="cursor: pointer; background-color: rgba(50, 50, 50);"
               @click="earthquakesExpanded = !earthquakesExpanded"
             >
               <v-icon class="mr-2 text-primary" size="24">mdi-pulse</v-icon>
@@ -145,29 +160,49 @@ export default {
 
             <v-expand-transition>
               <v-card-text v-show="earthquakesExpanded" class="pa-2">
-              <v-card class="px-4 grey darken-4 rounded-lg my-2" flat style="background-color: rgba(30, 30, 30, 0.4);">
-                <v-select
-                  label="选择地震动"
-                  :items="['Sample: El Centro']"
-                  dense
-                  hide-details
-                  class="mb-3"
-                  color="primary"
-                  bg-color="rgba(30, 30, 30, 0.6)"
-                ></v-select>
+                <v-row dense align="center" class="px-4 pt-4">
+                  <v-col cols="9" class="pr-1">
+                    <v-select
+                      label="选择地震动"
+                      :items="['El-Centro (0.05g)']"
+                      single-line
+                      hide-details
+                      variant="outlined"
+                      density="compact"
+                      class="mb-3"
+                      color="primary"
+                      bg-color="rgba(30, 30, 30, 0.6)"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="1"></v-col>
+                  <v-col cols="2" class="pr-1">
+                    <v-btn
+                      variant="tonal"
+                      @click="$emit('load-his-data')"
+                      block
+                      small
+                      class="text-white rounded-lg mb-3"
+                    >
+                      <v-icon left size="18">mdi-download</v-icon>
+                      载入
+                    </v-btn>
+                  </v-col>
+                </v-row>
 
-                <v-sparkline
-                  :fill="false"
-                  :gradient="['#42b3f4']"
-                  :line-width=1
-                  :padding=8
-                  :smooth="false"
-                  :model-value="eq_his"
-                  auto-draw
-                  align="center"
-                ></v-sparkline>
-              </v-card>
-              <v-divider></v-divider>
+                <v-card class="px-4 grey darken-4 rounded-lg" flat style="background-color: rgba(30, 30, 30, 0.4);">
+                  <v-sparkline
+                    :fill="false"
+                    :gradient="['#42b3f4']"
+                    line-width=.5
+                    :padding=8
+                    :smooth="false"
+                    :model-value="eq_his"
+                    auto-draw
+                    align="center"
+                    class="pb-2"
+                  ></v-sparkline>
+                  <v-divider></v-divider>
+                </v-card>
 
               <v-card class="py-2 px-0 grey darken-4 rounded-lg my-2" flat style="background-color: rgba(30, 30, 30, 0.4);">
                 <v-data-table
@@ -201,7 +236,7 @@ export default {
                 </v-card-actions>
               </v-card>
               -->
-              
+
               </v-card-text>
             </v-expand-transition>
           </v-card>
@@ -210,7 +245,7 @@ export default {
           <div class="my-4"></div>
 
           <!-- Quick Actions Section -->
-          <v-card class="grey darken-4 rounded-lg my-3 pa-0" style="overflow: hidden; border-radius: 16px;" elevation="2">
+          <v-card class="grey darken-4 rounded-lg my-3 pa-4" style="overflow: hidden; border-radius: 16px;" elevation="2">
             <v-card-title class="text-subtitle-1 font-weight-medium text-white py-2 px-1">
               <v-icon class="mr-2 text-white" size="20">mdi-lightning-bolt</v-icon>
               快速操作
@@ -276,7 +311,7 @@ export default {
           <div class="my-4"></div>
 
           <!-- Color Legend Section -->
-          <v-card class="grey darken-4 rounded-lg my-3 pa-0" style="overflow: hidden; border-radius: 16px;" elevation="2">
+          <v-card class="grey darken-4 rounded-lg my-3 pa-4" style="overflow: hidden; border-radius: 16px;" elevation="2">
             <v-card-title class="text-subtitle-1 font-weight-medium text-white py-2 px-1">
               <v-icon class="mr-2 text-white" size="20">mdi-palette</v-icon>
               响应图例（最大层间位移）
