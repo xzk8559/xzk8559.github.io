@@ -16,9 +16,9 @@ class ChunkManager {
     scene,
     meta,
     createBuildingsFromChunk,
-    maxConcurrentLoads = 5,
-    marginIn = 50,
-    marginOut = 100,
+    maxConcurrentLoads = 8,
+    marginIn = 150,
+    marginOut = 200,
     cacheLifetime = 30000
   ) {
     // Basic settings
@@ -48,7 +48,7 @@ class ChunkManager {
 
     // Throttle chunk updates
     this.lastUpdateTime = 0;
-    this.updateInterval = 20; // ms
+    this.updateInterval = 17; // ms
 
     // Building picking manager for individual building interaction
     this.buildingPickingManager = new BuildingPickingManager(scene);
@@ -159,6 +159,7 @@ class ChunkManager {
    * Else -> fetch from server
    */
   async loadChunk(chunkKey) {
+    const startTime = performance.now();  
     const chunkInfo = this.chunks[chunkKey];
 
     if (chunkInfo.mesh && this.scene.children.includes(chunkInfo.mesh)) {
@@ -191,7 +192,7 @@ class ChunkManager {
             this.createPickingMeshesForChunk(chunkData, chunkKey);
         }
 
-        console.log(`Reattached chunk from cache: ${chunkKey}`);
+        console.log(`Reattached chunk: ${chunkKey} took ${(performance.now()-startTime).toFixed(0)} ms`);
         return;
       }
 
@@ -238,7 +239,7 @@ class ChunkManager {
       // Create picking meshes for buildings in this chunk
       this.createPickingMeshesForChunk(chunkData, chunkKey);
 
-      console.log(`Loaded chunk: ${chunkKey}`);
+      console.log(`Loaded chunk: ${chunkKey} took ${(performance.now()-startTime).toFixed(0)} ms`);
     } catch (error) {
       console.error('Error loading chunk:', error);
     } finally {
