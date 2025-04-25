@@ -14,7 +14,7 @@ import { BlockBuildingChunk } from './blockBuildingChunk.js';
  *    and T (the number of time steps).
  *  - We'll store a "floorIndex" attribute so each vertex knows which floor it belongs to.
  */
-export function createBuildingsFromChunk(chunkData) {
+export function createBuildingsFromChunk(chunkData, T) {
     let allGeoms = [];
 
     // (1) Pre-calculate sumFloors if not already in chunkData
@@ -53,7 +53,7 @@ export function createBuildingsFromChunk(chunkData) {
     let mergedGeom = mergeGeometries(allGeoms, false);
 
     // Create a custom ShaderMaterial with a displacement texture
-    let material = createDisplacementShaderMaterial(sumFloors, chunkData.T);
+    let material = createDisplacementShaderMaterial(sumFloors, T);
 
     let mesh = new THREE.Mesh(mergedGeom, material);
 

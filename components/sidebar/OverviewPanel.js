@@ -42,8 +42,9 @@ export default {
     return {
       hoveredValue: null,
       legendMin: 0,
-      legendMax: 1.013, // Based on the value used in calculateColorInterpolation function
-      earthquakesExpanded: true
+      legendMax: 1.013,
+      earthquakesExpanded: true,
+      selectedEarthquake: 'El-Centro (0.05g)'
     };
   },
   emits: [
@@ -164,7 +165,8 @@ export default {
                   <v-col cols="9" class="pr-1">
                     <v-select
                       label="选择地震动"
-                      :items="['El-Centro (0.05g)']"
+                      :items="['El-Centro (0.05g)', '南黄海 (19961109)']"
+                      v-model="selectedEarthquake"
                       single-line
                       hide-details
                       variant="outlined"
@@ -178,7 +180,7 @@ export default {
                   <v-col cols="2" class="pr-1">
                     <v-btn
                       variant="tonal"
-                      @click="$emit('load-his-data')"
+                      @click="$emit('load-his-data', selectedEarthquake)"
                       block
                       small
                       class="text-white rounded-lg mb-3"
@@ -342,6 +344,18 @@ export default {
       </v-row>
     </v-card>
   `,
+  // TODO: 根据导入文件数据更新legendMax---------------------------------------------
+  watch: {
+    selectedEarthquake(newValue) {
+      // 当选择南黄海地震时，将legendMax设置为1.415
+      if (newValue === '南黄海 (19961109)') {
+        this.legendMax = 1.415;
+      } else {
+        // 其他情况（如El-Centro）使用默认值1.013
+        this.legendMax = 1.013;
+      }
+    }
+  },
   methods: {
     startStopAnimation() {
       // Toggle animation state

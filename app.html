@@ -64,6 +64,7 @@
 
             @pause-timeline="pauseTimeline"
             @reset-time-control="resetTimeControl"
+            @load-his-data="loadHisData"
         ></navigation-drawer>
 
         <!-- Main Content -->
@@ -237,6 +238,15 @@
                     }
                 });
             };
+            const loadHisData = (earthquakeScenario) => {
+                console.log('Loading earthquake scenario:', earthquakeScenario);
+                sendMessageToIframe({
+                    type: 'loadEarthquakeData',
+                    data: {
+                        scenario: earthquakeScenario
+                    }
+                });
+            };
             const pauseTimeline = () => { ani_paused.value = !ani_paused.value };
             const switchAniState = () => {
                 ani_disabled.value = !ani_disabled.value;
@@ -347,6 +357,7 @@
                 renderPage,
                 resetCamera,
                 resetTimeControl,
+                loadHisData,
                 pauseTimeline,
                 switchAniState
             }

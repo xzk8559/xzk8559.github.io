@@ -120,6 +120,7 @@ export default {
       <div>
         <!-- Overview Panel -->
         <overview-panel
+          ref="overviewPanel"
           v-show="pageAside === 1"
           :overview-stats="overviewStats"
           :switch_anim="switch_anim"
@@ -133,7 +134,7 @@ export default {
           @update:switch_anim="$emit('update:switch_anim', $event)"
           @switch-ani-state="$emit('switch-ani-state')"
           @reset-time-control="$emit('reset-time-control')"
-          @load-his-data="$emit('load-his-data')"
+          @load-his-data="$emit('load-his-data', $event)"
           @update-eq-table="$emit('update-eq-table')"
           @update:switch_interact="$emit('update:switch_interact', $event)"
         ></overview-panel>

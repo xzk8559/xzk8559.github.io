@@ -50,6 +50,9 @@ class ChunkManager {
     this.lastUpdateTime = 0;
     this.updateInterval = 17; // ms
 
+    // Current earthquake scenario ID (0: El-Centro, 1: 南黄海)
+    this.currentScenarioId = 0;
+
     // Building picking manager for individual building interaction
     this.buildingPickingManager = new BuildingPickingManager(scene);
   }
@@ -113,6 +116,15 @@ class ChunkManager {
   }
 
   /**
+   * Set the current earthquake scenario ID
+   * @param {number} scenarioId - The scenario ID (0: El-Centro, 1: 南黄海)
+   */
+  setScenarioId(scenarioId) {
+    this.currentScenarioId = scenarioId;
+    console.log(`ChunkManager: Set current scenario ID to ${scenarioId}`);
+  }
+
+  /**
    * Put a chunk's mesh into the cache (time-stamped).
    */
   cacheChunk(chunkKey, mesh) {
@@ -159,7 +171,7 @@ class ChunkManager {
    * Else -> fetch from server
    */
   async loadChunk(chunkKey) {
-    const startTime = performance.now();  
+    const startTime = performance.now();
     const chunkInfo = this.chunks[chunkKey];
 
     if (chunkInfo.mesh && this.scene.children.includes(chunkInfo.mesh)) {
@@ -204,7 +216,8 @@ class ChunkManager {
       const chunkData = await response.json();
 
       // response texture
-      const respTexUrl = chunkData.resp_png_url;
+      const T = chunkData.scenarios[this.currentScenarioId].T;
+      const respTexUrl = chunkData.scenarios[this.currentScenarioId].resp_png_url;
       const loader = new THREE.TextureLoader();
       const displacementTex = await new Promise((resolve, reject) => {
         loader.load(
@@ -215,7 +228,7 @@ class ChunkManager {
         );
       });
 
-      const chunkObject = this.createBuildingsFromChunk(chunkData);
+      const chunkObject = this.createBuildingsFromChunk(chunkData, T);
       // if chunkInfo.mesh was never set or if it was set from a previous partial load attempt, dispose the old one
       if (chunkInfo.mesh) this.disposeMesh(chunkInfo.mesh);
 

@@ -38,7 +38,7 @@ let knownChunkFiles = [];
 
 async function loadChunkFilesList() {
     try {
-        const response = await fetch('./data/Qingpu/chunkFiles-Qingpu-20250114.json');
+        const response = await fetch('./data/Qingpu/chunkFiles-Qingpu-20250425.json');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -132,8 +132,8 @@ async function init() {
         NProgress.start();
         try {
             const [meta_data, gm_data] = await Promise.all([
-                fetchJSON('./data/Qingpu/', 'meta-Qingpu-20250114.json'),
-                fetchJSON('./data/Qingpu/', 'ground_motion.json'),
+                fetchJSON('./data/Qingpu/', 'meta-Qingpu-20250425.json'),
+                fetchJSON('./data/Qingpu/accelerograms/', 'elcentro.json'),
             ]);
 
             meta = meta_data;
@@ -161,9 +161,6 @@ async function init() {
             setEarthquakeData()
 
             max_time_step = gm_data.T;
-            if (meta.T !== gm_data.T) {
-                console.warn('The number of earthquakes in the meta data and the GM data does not match.');
-            }
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -757,6 +754,152 @@ function cameraMovedSignificantly(camera, lastCamPos, lastCamRot, moveThreshold 
     return (dist > moveThreshold) || (rotDist > rotThreshold);
 }
 
+// 地震数据文件映射
+const earthquakeDataFiles = {
+    'El-Centro (0.05g)': 'elcentro.json',
+    '南黄海 (19961109)': 'huanghai-19961109.json'
+};
+
+// 地震场景ID映射
+const earthquakeScenarioIds = {
+    'El-Centro (0.05g)': 0,
+    '南黄海 (19961109)': 1
+};
+
+// 加载地震数据
+async function loadEarthquakeData(scenario) {
+    NProgress.start();
+    try {
+        // 获取对应的文件名
+        const filename = earthquakeDataFiles[scenario] || 'ground_motion.json';
+        console.log(`Loading earthquake data: ${scenario} (${filename})`);
+
+        // 获取场景ID
+        const scenarioId = earthquakeScenarioIds[scenario] !== undefined ?
+            earthquakeScenarioIds[scenario] : 0;
+
+        // 加载地震数据
+        const gm_data = await fetchJSON('./data/Qingpu/accelerograms/', filename);
+
+        // 更新地震信息
+        eq = {
+            eid: scenarioId,
+            name: gm_data.name || scenario,
+            direction: gm_data.direction || '-',
+            duration: gm_data.T / gm_data.sample_rate,
+            pga: gm_data.pga || 0.05,
+            acc: gm_data.acc,
+        };
+
+        // 更新最大时间步
+        max_time_step = gm_data.T;
+
+        // 发送地震数据到父窗口
+        setEarthquakeData();
+
+        // 更新所有已加载的块的响应纹理
+        await updateAllChunksResponseTextures(scenarioId);
+
+        // 重置动画时间线
+        times.last_step = 0;
+
+        // 确保动画标志设置正确
+        window.animationEnabled = true;
+
+        console.log('Earthquake data loaded successfully. Animation enabled.');
+    } catch (error) {
+        console.error('Error loading earthquake data:', error);
+    } finally {
+        NProgress.done();
+    }
+}
+
+// 更新所有已加载的块的响应纹理
+async function updateAllChunksResponseTextures(scenarioId) {
+    console.log(`Updating response textures for scenario ID: ${scenarioId}`);
+
+    // 设置ChunkManager的当前场景ID
+    chunkManager.setScenarioId(scenarioId);
+
+    const updatePromises = [];
+
+    // 遍历所有已加载的块
+    for (const chunkKey in chunkManager.chunks) {
+        const chunkInfo = chunkManager.chunks[chunkKey];
+
+        // 只处理已加载的块
+        if (chunkInfo.loaded && chunkInfo.mesh) {
+            updatePromises.push(reloadChunkTexture(chunkKey));
+        }
+    }
+
+    // 等待所有更新完成
+    await Promise.all(updatePromises);
+    console.log(`Updated response textures for ${updatePromises.length} chunks`);
+}
+
+// 重新加载块的响应纹理
+async function reloadChunkTexture(chunkKey) {
+    const chunkInfo = chunkManager.chunks[chunkKey];
+    if (!chunkInfo || !chunkInfo.loaded || !chunkInfo.mesh) return;
+
+    try {
+        // 获取块数据
+        const response = await fetch(chunkInfo.url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ${chunkInfo.url}`);
+        }
+
+        const chunkData = await response.json();
+
+        // 确保场景存在
+        const scenarioId = chunkManager.currentScenarioId;
+        if (!chunkData.scenarios || !chunkData.scenarios[scenarioId]) {
+            console.warn(`Scenario ${scenarioId} not found for chunk ${chunkKey}`);
+            return;
+        }
+
+        // 获取对应场景的响应纹理URL
+        const respTexUrl = chunkData.scenarios[scenarioId].resp_png_url;
+
+        // 加载新的响应纹理
+        const loader = new THREE.TextureLoader();
+        const displacementTex = await new Promise((resolve, reject) => {
+            loader.load(
+                respTexUrl,
+                tex => resolve(tex),
+                undefined,
+                err => reject(err)
+            );
+        });
+
+        // 更新材质中的位移纹理
+        const mat = chunkInfo.mesh.material;
+        if (mat && mat.uniforms && mat.uniforms.uDisplacementMap) {
+            // 释放旧纹理
+            if (mat.uniforms.uDisplacementMap.value) {
+                mat.uniforms.uDisplacementMap.value.dispose();
+            }
+
+            // 设置新纹理
+            mat.uniforms.uDisplacementMap.value = displacementTex;
+            displacementTex.minFilter = THREE.LinearFilter;
+            displacementTex.magFilter = THREE.LinearFilter;
+            displacementTex.wrapS = THREE.ClampToEdgeWrapping;
+            displacementTex.wrapT = THREE.ClampToEdgeWrapping;
+            displacementTex.flipY = false;
+            displacementTex.needsUpdate = true;
+
+            mat.uniforms.uTimeSteps.value = max_time_step * 1.0;
+            mat.uniforms.uAnimate.value = 1.0;
+        }
+
+        console.log(`Updated response texture for chunk ${chunkKey}`);
+    } catch (error) {
+        console.error(`Error updating response texture for chunk ${chunkKey}:`, error);
+    }
+}
+
 // 添加消息监听器
 window.addEventListener('message', function(event) {
     if (event.data.type === 'resetCamera') {
@@ -783,5 +926,9 @@ window.addEventListener('message', function(event) {
     } else if (event.data.type === 'resetAnimation') {
         // 重置动画
         times.last_step = 0;
+    } else if (event.data.type === 'loadEarthquakeData') {
+        // 加载地震数据
+        const scenario = event.data.data.scenario;
+        loadEarthquakeData(scenario);
     }
 });
